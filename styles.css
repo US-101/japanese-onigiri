@@ -374,3 +374,44 @@ main{ padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 
 @media (max-width:420px){
   .list .card{ padding:12px 12px; }
 }
+
+/* === 修正：關掉日文強制對齊，避免大空白 === */
+#cards .card .ko,
+.list .card .ko{
+  text-align: start !important;      /* 關掉 justify */
+  text-justify: auto !important;
+  letter-spacing: .01em;
+  line-height: 1.75;
+  text-wrap: balance;                 /* 仍保留平均分行 */
+  word-break: keep-all;
+  line-break: strict;
+  -webkit-line-break: strict;
+
+  /* 避免孤字行：保守一點，不要硬撐過頭 */
+  min-inline-size: 5em;               /* 原先 6em → 稍微放鬆 */
+  widows: 2;
+  orphans: 2;
+}
+
+/* 若瀏覽器不支援 balance，退成 pretty */
+@supports not (text-wrap: balance){
+  #cards .card .ko,
+  .list .card .ko{ text-wrap: pretty; }
+}
+
+/* 仍保證按鈕不會蓋字（保險再覆蓋一次） */
+#cards .card .badges,
+#cards .card .actions,
+.list .card .badges,
+.list .card .actions{
+  position: static !important;
+  display: flex;
+  gap: 8px;
+  align-self: start;
+}
+
+@media (max-width: 380px){
+  #cards .card, .list .card{ grid-template-columns: 1fr; }
+  #cards .card .badges, #cards .card .actions,
+  .list .card .badges, .list .card .actions{ margin-top: 6px; }
+}
