@@ -1,0 +1,568 @@
+<!DOCTYPE html><html lang="zh-Hant"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>日語飯糰｜發音練習</title><meta name="description" content="針對旅行的時候臨時可用的方便小物"><meta property="og:type" content="website"><meta property="og:title" content="日語飯糰｜發音練習"><meta property="og:description" content="針對旅行的時候臨時可用的方便小物"><meta property="og:image" content="icons/icon-512.png"><meta property="og:url" content="https://us-101.github.io/japanese-pronunciation/index.html"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="日語飯糰｜發音練習"><meta name="twitter:description" content="針對旅行的時候臨時可用的方便小物"><meta name="twitter:image" content="icons/icon-512.png"><link rel="manifest" href="manifest.json"><link rel="stylesheet" href="styles.css">
+<link rel="apple-touch-icon" href="icons/icon-512.png"><script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));}</script></head><body>
+<header class="topbar"><div class="bar"><h1 class="title"><img src="icons/p1.svg" alt=""></h1></div></header>
+
+<div class="appbar">
+  <div class="row" style="justify-content:space-between;gap:12px;max-width:540px;margin:0 auto;padding:12px 16px 6px 16px">
+    <div style="display:flex;gap:12px">
+      <button id="btnV" class="pill teal">平假名</button>
+      <button id="btnC" class="pill">片假名</button>
+    </div>
+    <div style="display:flex;gap:8px">
+      <span class="pill amber speed">x0.75</span>
+    </div>
+  </div>
+  <div class="row" style="justify-content:flex-start;max-width:540px;margin:0 auto;padding:0 16px 8px 16px">
+    <div style="font-size:12px;color:#97a1a6">按一下有聲音 · 一回クリックで音声<br>快速點兩下閱讀單字 · 素早く二回クリックで単語読み</div>
+  </div>
+</div>
+
+<main class="wrap">
+  <div id="gridV" class="grid"></div>
+  <div id="gridC" class="grid" style="display:none"></div>
+</main>
+
+<nav class="tabbar"><div class="in"><a class='active' href='index.html'><span class='ico'><img src='icons/p1.svg' alt=''></span>發音練習</a><a class='' href='travel.html'><span class='ico'><img src='icons/p2.svg' alt=''></span>旅行會話</a><a class='' href='translate.html'><span class='ico'><img src='icons/p3.svg' alt=''></span>實時翻譯</a><a class='' href='history.html'><span class='ico'><img src='icons/p4.svg' alt=''></span>歷史紀錄</a></div></nav>
+
+<section class="modal" id="detail">
+  <div class="appbar" id="detailAppbar" style="position:fixed;top:0;left:0;right:0;z-index:3000;background:var(--bg);border-bottom:1px solid var(--line)">
+    <div class="row" style="justify-content:space-between;gap:12px;max-width:540px;margin:0 auto;padding:12px 16px 6px 16px">
+      <button class="pill teal" id="back">← 上一頁</button>
+      <span class="pill amber speed">x0.75</span>
+    </div>
+  </div>
+  <div class="sheet" style="padding-top:80px;padding-bottom:110px">
+    <div class="big" id="bigLetter"><span id="bigSym">あ</span></div>
+    <div id="words"></div>
+  </div>
+</section>
+
+<script>
+const DATA={ 
+  vowels:[
+    {sym:"あ", roman:"a", say:"あ", words:[["赤","紅色","red"],["雨","雨","rain"],["足","腳","foot"],["朝","早上","morning"],["頭","頭","head"]]}, 
+    {sym:"い", roman:"i", say:"い", words:[["犬","狗","dog"],["一","一","one"],["家","家","house"],["椅子","椅子","chair"],["苺","草莓","strawberry"]]}, 
+    {sym:"う", roman:"u", say:"う", words:[["馬","馬","horse"],["海","海","sea"],["歌","歌","song"],["牛","牛","cow"],["腕","手臂","arm"]]}, 
+    {sym:"え", roman:"e", say:"え", words:[["鉛筆","鉛筆","pencil"],["駅","車站","station"],["絵本","繪本","picture book"],["英語","英語","English"],["笑顔","笑容","smile"]]}, 
+    {sym:"お", roman:"o", say:"お", words:[["お金","錢","money"],["お茶","茶","tea"],["男","男人","man"],["女","女人","woman"],["花","花","flower"]]}, 
+    {sym:"か", roman:"ka", say:"か", words:[["鞄","包包","bag"],["紙","紙","paper"],["風","風","wind"],["川","河","river"],["肩","肩膀","shoulder"]]}, 
+    {sym:"き", roman:"ki", say:"き", words:[["木","樹","tree"],["黄色","黃色","yellow"],["狐","狐狸","fox"],["金","金","gold"],["気持ち","心情","feeling"]]}, 
+    {sym:"く", roman:"ku", say:"く", words:[["口","嘴巴","mouth"],["靴","鞋子","shoes"],["雲","雲","cloud"],["熊","熊","bear"],["黒","黑色","black"]]}, 
+    {sym:"け", roman:"ke", say:"け", words:[["剣","劍","sword"],["消しゴム","橡皮擦","eraser"],["稽古","練習","practice"],["経験","經驗","experience"],["喧嘩","吵架","fight"]]}, 
+    {sym:"こ", roman:"ko", say:"こ", words:[["子供","小孩","child"],["今日は","你好","hello"],["今晩は","晚安","good evening"],["今日","今天","today"],["心","心","heart"]]}, 
+    {sym:"さ", roman:"sa", say:"さ", words:[["魚","魚","fish"],["桜","櫻花","cherry blossom"],["砂糖","砂糖","sugar"],["寒い","冷","cold"],["作品","作品","work"]]}, 
+    {sym:"し", roman:"shi", say:"し", words:[["白","白色","white"],["新聞","報紙","newspaper"],["仕事","工作","work"],["週末","週末","weekend"],["宿題","作業","homework"]]}, 
+    {sym:"す", roman:"su", say:"す", words:[["寿司","壽司","raw fish"],["鈴","鈴鐺","bell"],["好き","喜歡","like"],["すみません","對不起","excuse me"],["凄い","厲害","amazing"]]}, 
+    {sym:"せ", roman:"se", say:"せ", words:[["先生","老師","teacher"],["世界","世界","world"],["洗濯","洗衣服","laundry"],["生活","生活","life"],["成功","成功","success"]]}, 
+    {sym:"そ", roman:"so", say:"そ", words:[["空","天空","sky"],["蕎麦","蕎麥麵","buckwheat noodles"],["祖父","祖父","grandfather"],["祖母","祖母","grandmother"],["掃除","打掃","cleaning"]]}, 
+    {sym:"た", roman:"ta", say:"た", words:[["食べる","吃","eat"],["楽しい","快樂","fun"],["建物","建築物","building"],["宝物","寶物","treasure"],["卵","蛋","egg"]]}, 
+    {sym:"ち", roman:"chi", say:"ち", words:[["小さい","小","small"],["力","力量","power"],["地図","地圖","map"],["父","父親","father"],["中学","中學","middle school"]]}, 
+    {sym:"つ", roman:"tsu", say:"つ", words:[["机","桌子","desk"],["月","月亮","moon"],["強い","強","strong"],["妻","妻子","wife"],["作る","製作","make"]]}, 
+    {sym:"て", roman:"te", say:"て", words:[["天気","天氣","weather"],["手紙","信","letter"],["天ぷら","天婦羅","fried food"],["店員","店員","clerk"]]}, 
+    {sym:"と", roman:"to", say:"と", words:[["時計","時鐘","clock"],["鳥","鳥","bird"],["遠い","遠","far"]]}, 
+    {sym:"な", roman:"na", say:"な", words:[["名前","名字","name"],["夏","夏天","summer"],["何","什麼","what"],["仲良し","好朋友","good friend"]]}, 
+    {sym:"に", roman:"ni", say:"に", words:[["日本","日本","Japan"],["日曜日","星期日","Sunday"],["人形","人偶","doll"],["日本語","日語","Japanese"],["庭","庭院","garden"]]}, 
+    {sym:"ぬ", roman:"nu", say:"ぬ", words:[["縫いぐるみ","布偶","stuffed animal"],["温い","溫","lukewarm"],["盗む","偷","steal"],["沼","沼澤","swamp"],["脱ぐ","脫","take off"]]}, 
+    {sym:"ね", roman:"ne", say:"ね", words:[["猫","貓","cat"],["寝る","睡覺","sleep"],["願い","願望","wish"],["年","年","year"],["鼠","老鼠","mouse"]]}, 
+    {sym:"の", roman:"no", say:"の", words:[["海苔","海苔","seaweed"],["飲む","喝","drink"],["脳","腦","brain"],["残る","留下","remain"],["覗く","窺視","peek"]]}, 
+    {sym:"は", roman:"ha", say:"は", words:[["花","花","flower"],["箸","筷子","chopsticks"],["春","春天","spring"],["箱","盒子","box"],["速い","快","fast"]]}, 
+    {sym:"ひ", roman:"hi", say:"ひ", words:[["火","火","fire"],["飛行機","飛機","airplane"],["昼","中午","noon"],["平仮名","平假名","hiragana script"],["秘密","秘密","secret"]]}, 
+    {sym:"ふ", roman:"fu", say:"ふ", words:[["船","船","ship"],["服","衣服","clothes"],["冬","冬天","winter"],["古い","舊","old"],["布団","棉被","futon"]]}, 
+    {sym:"へ", roman:"he", say:"へ", words:[["部屋","房間","room"],["下手","不擅長","bad at"],["平和","和平","peace"],["変","奇怪","strange"],["平気","平常","calm"]]}, 
+    {sym:"ほ", roman:"ho", say:"ほ", words:[["本","書","book"],["星","星星","star"],["本当","真的","really"],["本屋","書店","bookstore"],["本質","本質","essence"]]}, 
+    {sym:"ま", roman:"ma", say:"ま", words:[["窓","窗戶","window"],["町","城鎮","town"],["待つ","等待","wait"],["漫画","漫畫","comic"],["毎朝","每天早上","every morning"]]}, 
+    {sym:"み", roman:"mi", say:"み", words:[["水","水","water"],["道","道路","road"],["緑","綠色","green"],["皆さん","大家","everyone"],["見る","看","see"]]}, 
+    {sym:"む", roman:"mu", say:"む", words:[["虫","蟲","insect"],["難しい","困難","difficult"],["昔","以前","old times"],["無理","無理","impossible"],["娘","女兒","daughter"]]}, 
+    {sym:"め", roman:"me", say:"め", words:[["目","眼睛","eye"],["眼鏡","眼鏡","glasses"],["麺","麵","noodles"],["名刺","名片","business card"],["珍しい","罕見","rare"]]}, 
+    {sym:"も", roman:"mo", say:"も", words:[["桃","桃子","peach"],["森","森林","forest"],["門","門","gate"],["もっと","更多","more"],["文句","抱怨","complaint"]]}, 
+    {sym:"や", roman:"ya", say:"や", words:[["山","山","mountain"],["野菜","蔬菜","vegetable"],["約束","約定","promise"],["焼く","燒","burn"],["役人","役人","official"]]}, 
+    {sym:"ゆ", roman:"yu", say:"ゆ", words:[["雪","雪","snow"],["夢","夢","dream"],["夕方","傍晚","evening"],["郵便","郵件","mail"],["友人","友人","friend"]]}, 
+    {sym:"よ", roman:"yo", say:"よ", words:[["夜","夜晚","night"],["読む","讀","read"],["よろしく","請多指教","please"],["予定","預定","schedule"],["喜ぶ","高興","rejoice"]]}, 
+    {sym:"ら", roman:"ra", say:"ら", words:[["楽","輕鬆","easy"],["蘭","蘭花","orchid"],["落書き","塗鴉","doodle"],["楽天","樂天","optimism"],["落語","落語","comic storytelling"]]}, 
+    {sym:"り", roman:"ri", say:"り", words:[["林檎","蘋果","apple"],["旅行","旅行","travel"],["料理","料理","cooking"],["寮","宿舍","dormitory"],["理解","理解","understanding"]]}, 
+    {sym:"る", roman:"ru", say:"る", words:[["留守","不在","absence"],["類","類","kind"],["類型","類型","type"],["類似","類似","similar"],["累積","累積","accumulation"]]}, 
+    {sym:"れ", roman:"re", say:"れ", words:[["練習","練習","practice"],["歴史","歷史","history"],["零","零","zero"],["冷蔵庫","冰箱","refrigerator"],["礼儀","禮儀","manners"]]}, 
+    {sym:"ろ", roman:"ro", say:"ろ", words:[["六","六","six"],["録音","錄音","recording"],["録画","錄畫","video recording"],["ろくに","好好地","properly"],["轆轤","轆轤","potter's wheel"]]}, 
+    {sym:"わ", roman:"wa", say:"わ", words:[["若者","年輕人","young person"],["忘れる","忘記","forget"],["分かる","明白","understand"],["笑い","笑","laugh"],["若い","年輕","young"]]}, 
+    {sym:"を", roman:"wo", say:"を", words:[["を","助詞","particle"]]}, 
+    {sym:"ん", roman:"n", say:"ん", words:[["簡単","簡單","easy"],["漢字","漢字","Chinese characters"],["日本語","日語","Japanese"],["先生","老師","teacher"],["学生","學生","student"]]}
+  ],
+  consonants:[
+    {sym:"ア", roman:"a", say:"ア", words:[["アニメ","動畫","animation"],["アパート","公寓","apartment"],["アフリカ","非洲","Africa"],["アメリカ","美國","America"],["アルバイト","打工","part-time job"]]}, 
+    {sym:"イ", roman:"i", say:"イ", words:[["イギリス","英國","England"],["イタリア","義大利","Italy"],["インターネット","網路","Internet"],["インド","印度","India"],["イベント","活動","event"]]}, 
+    {sym:"ウ", roman:"u", say:"ウ", words:[["ウイスキー","威士忌","whiskey"],["ウエイター","服務生","waiter"],["ウエディング","婚禮","wedding"],["ウォーター","水","water"],["ウルグアイ","烏拉圭","Uruguay"]]}, 
+    {sym:"エ", roman:"e", say:"エ", words:[["エアコン","冷氣","air conditioner"],["エスカレーター","手扶梯","escalator"],["エレベーター","電梯","elevator"],["エンジン","引擎","engine"],["エレクトロニクス","電子","electronics"]]}, 
+    {sym:"オ", roman:"o", say:"オ", words:[["オーストラリア","澳洲","Australia"],["オートバイ","機車","motorcycle"],["オフィス","辦公室","office"],["オレンジ","橘子","orange"],["オーケストラ","管弦樂團","orchestra"]]}, 
+    {sym:"カ", roman:"ka", say:"カ", words:[["カード","卡片","card"],["カメラ","相機","camera"],["カフェ","咖啡廳","cafe"],["カナダ","加拿大","Canada"],["カレンダー","日曆","calendar"]]}, 
+    {sym:"キ", roman:"ki", say:"キ", words:[["キーボード","鍵盤","keyboard"],["キッチン","廚房","kitchen"],["キロ","公斤","kilo"],["キリン","長頸鹿","giraffe"],["キリスト","基督","Christ"]]}, 
+    {sym:"ク", roman:"ku", say:"ク", words:[["クラス","班級","class"],["クリスマス","聖誕節","Christmas"],["クッキー","餅乾","cookie"],["クラブ","俱樂部","club"],["クレジット","信用卡","credit"]]}, 
+    {sym:"ケ", roman:"ke", say:"ケ", words:[["ケーキ","蛋糕","cake"],["ケース","箱子","case"],["ケーブル","電纜","cable"],["ケーキ屋","蛋糕店","cake shop"],["ケチャップ","番茄醬","ketchup"]]}, 
+    {sym:"コ", roman:"ko", say:"コ", words:[["コーヒー","咖啡","coffee"],["コート","外套","coat"],["コピー","複印","copy"],["コマーシャル","廣告","commercial"],["コントロール","控制","control"]]}, 
+    {sym:"サ", roman:"sa", say:"サ", words:[["サッカー","足球","soccer"],["サラダ","沙拉","salad"],["サンドイッチ","三明治","sandwich"],["サンプル","樣本","sample"],["サンタクロース","聖誕老人","Santa Claus"]]}, 
+    {sym:"シ", roman:"shi", say:"シ", words:[["シェフ","主廚","chef"],["シーズン","季節","season"],["シート","座位","seat"],["シェイク","奶昔","shake"],["シルク","絲綢","silk"]]}, 
+    {sym:"ス", roman:"su", say:"ス", words:[["スーパー","超市","supermarket"],["スカート","裙子","skirt"],["スキー","滑雪","ski"],["スケート","溜冰","skate"],["スピーカー","揚聲器","speaker"]]}, 
+    {sym:"セ", roman:"se", say:"セ", words:[["セーター","毛衣","sweater"],["セット","組合","set"],["セレブ","名人","celebrity"],["セミナー","研討會","seminar"]]}, 
+    {sym:"ソ", roman:"so", say:"ソ", words:[["ソーセージ","香腸","sausage"],["ソファー","沙發","sofa"],["ソフト","軟體","software"],["ソックス","襪子","socks"],["ソーラー","太陽能","solar"]]}, 
+    {sym:"タ", roman:"ta", say:"タ", words:[["タクシー","計程車","taxi"],["タワー","塔","tower"],["タオル","毛巾","towel"],["タレント","藝人","talent"],["ターミナル","終點站","terminal"]]}, 
+    {sym:"チ", roman:"chi", say:"チ", words:[["チーズ","起司","cheese"],["チケット","票","ticket"],["チョコレート","巧克力","chocolate"],["チーム","團隊","team"],["チャンス","機會","chance"]]}, 
+    {sym:"ツ", roman:"tsu", say:"ツ", words:[["ツアー","旅行團","tour"],["ツール","工具","tool"],["ツイッター","推特","Twitter"],["ツアーガイド","導遊","tour guide"]]}, 
+    {sym:"テ", roman:"te", say:"テ", words:[["テレビ","電視","television"],["テーブル","桌子","table"],["テニス","網球","tennis"],["テーマ","主題","theme"],["テクノロジー","科技","technology"]]}, 
+    {sym:"ト", roman:"to", say:"ト", words:[["トイレ","廁所","toilet"],["トップ","頂部","top"],["トマト","番茄","tomato"],["トルコ","土耳其","Turkey"],["トーナメント","錦標賽","tournament"]]}, 
+    {sym:"ナ", roman:"na", say:"ナ", words:[["ナイフ","刀子","knife"],["ナイト","夜晚","night"],["ナンバー","號碼","number"],["ナイロン","尼龍","nylon"],["ナプキン","餐巾","napkin"]]}, 
+    {sym:"ニ", roman:"ni", say:"ニ", words:[["ニット","針織","knit"],["ニッケル","鎳","nickel"],["ニンニク","大蒜","garlic"],["ニーズ","需求","needs"],["ニックネーム","暱稱","nickname"]]}, 
+    {sym:"ヌ", roman:"nu", say:"ヌ", words:[["ヌードル","麵條","noodle"],["ヌーボー","新","nouveau"],["ヌーベル","新","nouvelle"]]}, 
+    {sym:"ネ", roman:"ne", say:"ネ", words:[["ネクタイ","領帶","necktie"],["ネガティブ","負面","negative"],["ネイル","指甲","nail"],["ネオン","霓虹","neon"],["ネッシー","尼斯湖水怪","Nessie"]]}, 
+    {sym:"ノ", roman:"no", say:"ノ", words:[["ノート","筆記本","notebook"],["ノルウェー","挪威","Norway"],["ノーベル","諾貝爾","Nobel"],["ノルマ","定額","quota"],["ノーベル賞","諾貝爾獎","Nobel Prize"]]}, 
+    {sym:"ハ", roman:"ha", say:"ハ", words:[["ハンバーガー","漢堡","hamburger"],["ハイテク","高科技","high-tech"],["ハート","心","heart"],["ハワイ","夏威夷","Hawaii"],["ハロウィン","萬聖節","Halloween"]]}, 
+    {sym:"ヒ", roman:"hi", say:"ヒ", words:[["ヒーロー","英雄","hero"],["ヒップホップ","嘻哈","hip-hop"],["ヒステリー","歇斯底里","hysteria"],["ヒット","熱門","hit"],["ヒューマン","人類","human"]]}, 
+    {sym:"フ", roman:"fu", say:"フ", words:[["フランス","法國","France"],["フリー","免費","free"],["フロント","前台","front"],["フライドポテト","薯條","french fries"],["フルーツ","水果","fruit"]]}, 
+    {sym:"ヘ", roman:"he", say:"ヘ", words:[["ヘリコプター","直升機","helicopter"],["ヘッドホン","耳機","headphones"],["ヘルス","健康","health"],["ヘアスタイル","髮型","hairstyle"],["ヘルメット","安全帽","helmet"]]}, 
+    {sym:"ホ", roman:"ho", say:"ホ", words:[["ホテル","飯店","hotel"],["ホーム","家","home"],["ホットドッグ","熱狗","hot dog"],["ホラー","恐怖","horror"],["ホームページ","網頁","homepage"]]}, 
+    {sym:"マ", roman:"ma", say:"マ", words:[["マンガ","漫畫","manga"],["マネージャー","經理","manager"],["マッサージ","按摩","massage"],["マヨネーズ","美乃滋","mayonnaise"],["マスコミ","大眾傳媒","mass communication"]]}, 
+    {sym:"ミ", roman:"mi", say:"ミ", words:[["ミュージック","音樂","music"],["ミニ","迷你","mini"],["ミルク","牛奶","milk"],["ミュージカル","音樂劇","musical"],["ミステリー","推理","mystery"]]}, 
+    {sym:"ム", roman:"mu", say:"ム", words:[["ムービー","電影","movie"],["ムード","氣氛","mood"],["ムーン","月亮","moon"],["ムービー館","電影院","movie theater"],["ムービースター","電影明星","movie star"]]}, 
+    {sym:"メ", roman:"me", say:"メ", words:[["メニュー","菜單","menu"],["メール","電子郵件","email"],["メディア","媒體","media"],["メイク","化妝","makeup"],["メッセージ","訊息","message"]]}, 
+    {sym:"モ", roman:"mo", say:"モ", words:[["モーター","馬達","motor"],["モデル","模特兒","model"],["モニター","螢幕","monitor"],["モダン","現代","modern"],["モバイル","行動","mobile"]]}, 
+    {sym:"ヤ", roman:"ya", say:"ヤ", words:[["ヤンキー","不良少年","delinquent"],["ヤフー","雅虎","Yahoo"],["ヤード","碼","yard"],["ヤング","年輕","young"]]}, 
+    {sym:"ユ", roman:"yu", say:"ユ", words:[["ユニフォーム","制服","uniform"],["ユーロ","歐元","euro"],["ユーザー","使用者","user"],["ユニバーサル","通用","universal"],["ユニセックス","中性","unisex"]]}, 
+    {sym:"ヨ", roman:"yo", say:"ヨ", words:[["ヨーロッパ","歐洲","Europe"],["ヨガ","瑜伽","yoga"],["ヨット","遊艇","yacht"],["ヨーロッパ人","歐洲人","European"],["ヨーロッパ旅行","歐洲旅行","European travel"]]}, 
+    {sym:"ラ", roman:"ra", say:"ラ", words:[["ラーメン","拉麵","ramen"],["ラジオ","收音機","radio"],["ラッシュ","尖峰","rush"],["ランチ","午餐","lunch"],["ラッキー","幸運","lucky"]]}, 
+    {sym:"リ", roman:"ri", say:"リ", words:[["リモコン","遙控器","remote control"],["リーダー","領導者","leader"],["リゾート","度假村","resort"],["リサイクル","回收","recycle"],["リラックス","放鬆","relax"]]}, 
+    {sym:"ル", roman:"ru", say:"ル", words:[["ルール","規則","rule"],["ルーム","房間","room"],["ルーレット","輪盤","roulette"],["ルート","路線","route"],["ルーティン","例行公事","routine"]]}, 
+    {sym:"レ", roman:"re", say:"レ", words:[["レストラン","餐廳","restaurant"],["レコード","唱片","record"],["レンタル","租借","rental"],["レジャー","休閒","leisure"],["レッスン","課程","lesson"]]}, 
+    {sym:"ロ", roman:"ro", say:"ロ", words:[["ロボット","機器人","robot"],["ロマンチック","浪漫","romantic"],["ロック","搖滾","rock"],["ロビー","大廳","lobby"],["ロマンス","戀愛","romance"]]}, 
+    {sym:"ワ", roman:"wa", say:"ワ", words:[["ワイン","葡萄酒","wine"],["ワイシャツ","襯衫","white shirt"],["ワンピース","洋裝","one-piece dress"],["ワールド","世界","world"],["ワイヤー","電線","wire"]]}, 
+    {sym:"ヲ", roman:"wo", say:"ヲ", words:[["ヲ","助詞","particle"]]}, 
+    {sym:"ン", roman:"n", say:"ン", words:[["コンビニ","便利商店","convenience store"],["パン","麵包","bread"],["テレビ","電視","television"],["コーヒー","咖啡","coffee"],["ケーキ","蛋糕","cake"]]}
+  ]
+};
+
+let RATE=0.75; const SPEEDS=[0.5,0.75,1.0];
+
+function updateSpeedUI(){ document.querySelectorAll('.speed').forEach(el=>{ el.textContent='x'+RATE.toFixed(2).replace(/\.00$/,''); }); }
+function cycleSpeed(){ const i=SPEEDS.indexOf(RATE); RATE=SPEEDS[(i+1)%SPEEDS.length]; updateSpeedUI(); }
+
+function speakJa(t){ 
+  const u=new SpeechSynthesisUtterance(t);
+  u.lang='ja-JP';
+  u.rate=RATE;
+  const v = speechSynthesis.getVoices().find(v=>/ja/i.test(v.lang||'')); 
+  if(v) u.voice=v; 
+  speechSynthesis.speak(u);
+}
+
+function tile(it){ 
+  const el=document.createElement('div'); 
+  el.className='tile'; 
+  el.innerHTML=`<div class='sym'>${it.sym}</div><div class='rom'>${it.roman}</div>`; 
+  
+  let clickTimer = null;
+  
+  el.addEventListener('click', (e) => {
+    if (clickTimer) {
+      clearTimeout(clickTimer);
+      clickTimer = null;
+      // 這是雙擊，不播放聲音，直接進入詳細頁面
+      openDetail(it);
+    } else {
+      // 這是單擊，設置延遲播放聲音
+      clickTimer = setTimeout(() => {
+        speakJa(it.say);
+        clickTimer = null;
+      }, 200);
+    }
+  });
+  
+  return el; 
+}
+
+function render(){
+  const gv=document.getElementById('gridV'); gv.innerHTML=""; DATA.vowels.forEach(it=>gv.appendChild(tile(it)));
+  const gc=document.getElementById('gridC'); gc.innerHTML=""; DATA.consonants.forEach(it=>gc.appendChild(tile(it)));
+}
+
+function formatWord(ja, rom) {
+  // 檢查是否包含漢字或數字
+  const hasKanji = /[\u4E00-\u9FFF]/.test(ja);
+  const hasNumbers = /[0-9]/.test(ja);
+  
+  if (!hasKanji && !hasNumbers) return `<div class='ko'>${ja}</div>`;
+  
+  // 只處理漢字和數字，不處理已經是平假名的部分
+  // 將文字分離：漢字+數字 vs 平假名
+  const kanjiNumbers = ja.replace(/[\u3040-\u309F\u30A0-\u30FF]/g, ''); // 移除平假名和片假名
+  if (!kanjiNumbers) return `<div class='ko'>${ja}</div>`; // 如果沒有漢字或數字，直接返回
+
+  // 形態素解析：處理い形容詞的語幹分離
+  function analyzeMorphology(word, reading) {
+    // い形容詞的語尾模式
+    const iAdjectiveEndings = ['い', 'しい', 'ない', 'たい', 'らしい'];
+    
+    // 檢查是否為い形容詞
+    for (const ending of iAdjectiveEndings) {
+      if (reading.endsWith(ending) && word.endsWith('い')) {
+        const stemReading = reading.slice(0, -ending.length);
+        const stemWord = word.slice(0, -1); // 移除最後的「い」
+        
+        // 如果語幹部分有漢字，返回語幹的平假名
+        if (/[\u4E00-\u9FFF]/.test(stemWord)) {
+          return { 
+            stem: stemWord, 
+            stemReading: stemReading, 
+            okurigana: word.slice(-1), // 語尾部分
+            isIAdjective: true 
+          };
+        }
+      }
+    }
+    
+    return { stem: word, stemReading: reading, okurigana: '', isIAdjective: false };
+  }
+
+  // 定義詞彙映射，按長度排序（長詞在前）
+  const replacements = [
+    { kanji: "日本語", furigana: "にほんご" },
+    { kanji: "日曜日", furigana: "にちようび" },
+    { kanji: "今日は", furigana: "こんにちは" },
+    { kanji: "今晩は", furigana: "こんばんは" },
+    { kanji: "消しゴム", furigana: "けしゴム" },
+    { kanji: "平仮名", furigana: "ひらがな" },
+    { kanji: "飛行機", furigana: "ひこうき" },
+    { kanji: "縫いぐるみ", furigana: "ぬいぐるみ" },
+    { kanji: "難しい", furigana: "むずかしい" },
+    { kanji: "珍しい", furigana: "めずらしい" },
+    { kanji: "天ぷら", furigana: "てんぷら" },
+    { kanji: "気持ち", furigana: "きもち" },
+    { kanji: "皆さん", furigana: "みなさん" },
+    { kanji: "仲良し", furigana: "なかよし" },
+    { kanji: "よろしく", furigana: "よろしく" },
+    { kanji: "すみません", furigana: "すみません" },
+    { kanji: "日本", furigana: "にほん" },
+    { kanji: "今日", furigana: "きょう" },
+    { kanji: "先生", furigana: "せんせい" },
+    { kanji: "学生", furigana: "がくせい" },
+    { kanji: "人形", furigana: "にんぎょう" },
+    { kanji: "本当", furigana: "ほんとう" },
+    { kanji: "毎朝", furigana: "まいあさ" },
+    { kanji: "夕方", furigana: "ゆうがた" },
+    { kanji: "郵便", furigana: "ゆうびん" },
+    { kanji: "友人", furigana: "ゆうじん" },
+    { kanji: "落書き", furigana: "らくがき" },
+    { kanji: "楽天", furigana: "らくてん" },
+    { kanji: "林檎", furigana: "りんご" },
+    { kanji: "旅行", furigana: "りょこう" },
+    { kanji: "料理", furigana: "りょうり" },
+    { kanji: "類型", furigana: "るいけい" },
+    { kanji: "類似", furigana: "るいじ" },
+    { kanji: "累積", furigana: "るいせき" },
+    { kanji: "練習", furigana: "れんしゅう" },
+    { kanji: "歴史", furigana: "れきし" },
+    { kanji: "冷蔵庫", furigana: "れいぞうこ" },
+    { kanji: "礼儀", furigana: "れいぎ" },
+    { kanji: "録音", furigana: "ろくおん" },
+    { kanji: "録画", furigana: "ろくが" },
+    { kanji: "ろくに", furigana: "ろくに" },
+    { kanji: "轆轤", furigana: "ろくろ" },
+    { kanji: "若者", furigana: "わかもの" },
+    { kanji: "忘れる", furigana: "わすれる" },
+    { kanji: "分かる", furigana: "わかる" },
+    { kanji: "笑い", furigana: "わらい" },
+    { kanji: "若い", furigana: "わかい" },
+    { kanji: "洗濯", furigana: "せんたく" },
+    { kanji: "生活", furigana: "せいかつ" },
+    { kanji: "成功", furigana: "せいこう" },
+    { kanji: "週末", furigana: "しゅうまつ" },
+    { kanji: "宿題", furigana: "しゅくだい" },
+    { kanji: "本", furigana: "ほん" },
+    { kanji: "赤", furigana: "あか" },
+    { kanji: "雨", furigana: "あめ" },
+    { kanji: "足", furigana: "あし" },
+    { kanji: "朝", furigana: "あさ" },
+    { kanji: "頭", furigana: "あたま" },
+    { kanji: "犬", furigana: "いぬ" },
+    { kanji: "一", furigana: "いち" },
+    { kanji: "家", furigana: "いえ" },
+    { kanji: "椅子", furigana: "いす" },
+    { kanji: "苺", furigana: "いちご" },
+    { kanji: "馬", furigana: "うま" },
+    { kanji: "海", furigana: "うみ" },
+    { kanji: "歌", furigana: "うた" },
+    { kanji: "牛", furigana: "うし" },
+    { kanji: "腕", furigana: "うで" },
+    { kanji: "鉛筆", furigana: "えんぴつ" },
+    { kanji: "駅", furigana: "えき" },
+    { kanji: "絵本", furigana: "えほん" },
+    { kanji: "英語", furigana: "えいご" },
+    { kanji: "笑顔", furigana: "えがお" },
+    { kanji: "お金", furigana: "おかね" },
+    { kanji: "お茶", furigana: "おちゃ" },
+    { kanji: "男", furigana: "おとこ" },
+    { kanji: "女", furigana: "おんな" },
+    { kanji: "花", furigana: "はな" },
+    { kanji: "鞄", furigana: "かばん" },
+    { kanji: "紙", furigana: "かみ" },
+    { kanji: "風", furigana: "かぜ" },
+    { kanji: "川", furigana: "かわ" },
+    { kanji: "肩", furigana: "かた" },
+    { kanji: "木", furigana: "き" },
+    { kanji: "黄色", furigana: "きいろ" },
+    { kanji: "狐", furigana: "きつね" },
+    { kanji: "金", furigana: "きん" },
+    { kanji: "口", furigana: "くち" },
+    { kanji: "靴", furigana: "くつ" },
+    { kanji: "雲", furigana: "くも" },
+    { kanji: "熊", furigana: "くま" },
+    { kanji: "黒", furigana: "くろ" },
+    { kanji: "剣", furigana: "けん" },
+    { kanji: "稽古", furigana: "けいこ" },
+    { kanji: "経験", furigana: "けいけん" },
+    { kanji: "喧嘩", furigana: "けんか" },
+    { kanji: "子供", furigana: "こども" },
+    { kanji: "心", furigana: "こころ" },
+    { kanji: "魚", furigana: "さかな" },
+    { kanji: "桜", furigana: "さくら" },
+    { kanji: "砂糖", furigana: "さとう" },
+    { kanji: "寒い", furigana: "さむい" },
+    { kanji: "作品", furigana: "さくひん" },
+    { kanji: "食べる", furigana: "たべる" },
+    { kanji: "楽しい", furigana: "たのしい" },
+    { kanji: "建物", furigana: "たてもの" },
+    { kanji: "宝物", furigana: "たからもの" },
+    { kanji: "卵", furigana: "たまご" },
+    { kanji: "小さい", furigana: "ちいさい" },
+    { kanji: "力", furigana: "ちから" },
+    { kanji: "地図", furigana: "ちず" },
+    { kanji: "父", furigana: "ちち" },
+    { kanji: "中学", furigana: "ちゅうがく" },
+    { kanji: "机", furigana: "つくえ" },
+    { kanji: "月", furigana: "つき" },
+    { kanji: "強い", furigana: "つよい" },
+    { kanji: "妻", furigana: "つま" },
+    { kanji: "作る", furigana: "つくる" },
+    { kanji: "天気", furigana: "てんき" },
+    { kanji: "手紙", furigana: "てがみ" },
+    { kanji: "店員", furigana: "てんいん" },
+    { kanji: "時計", furigana: "とけい" },
+    { kanji: "鳥", furigana: "とり" },
+    { kanji: "遠い", furigana: "とおい" },
+    { kanji: "名前", furigana: "なまえ" },
+    { kanji: "夏", furigana: "なつ" },
+    { kanji: "何", furigana: "なに" },
+    { kanji: "庭", furigana: "にわ" },
+    { kanji: "温い", furigana: "ぬるい" },
+    { kanji: "盗む", furigana: "ぬすむ" },
+    { kanji: "沼", furigana: "ぬま" },
+    { kanji: "脱ぐ", furigana: "ぬぐ" },
+    { kanji: "猫", furigana: "ねこ" },
+    { kanji: "寝る", furigana: "ねる" },
+    { kanji: "願い", furigana: "ねがい" },
+    { kanji: "年", furigana: "ねん" },
+    { kanji: "鼠", furigana: "ねずみ" },
+    { kanji: "箸", furigana: "はし" },
+    { kanji: "春", furigana: "はる" },
+    { kanji: "箱", furigana: "はこ" },
+    { kanji: "速い", furigana: "はやい" },
+    { kanji: "火", furigana: "ひ" },
+    { kanji: "昼", furigana: "ひる" },
+    { kanji: "秘密", furigana: "ひみつ" },
+    { kanji: "船", furigana: "ふね" },
+    { kanji: "服", furigana: "ふく" },
+    { kanji: "冬", furigana: "ふゆ" },
+    { kanji: "古い", furigana: "ふるい" },
+    { kanji: "布団", furigana: "ふとん" },
+    { kanji: "部屋", furigana: "へや" },
+    { kanji: "下手", furigana: "へた" },
+    { kanji: "平和", furigana: "へいわ" },
+    { kanji: "変", furigana: "へん" },
+    { kanji: "平気", furigana: "へいき" },
+    { kanji: "簡単", furigana: "かんたん" },
+    { kanji: "漢字", furigana: "かんじ" },
+    { kanji: "海苔", furigana: "のり" },
+    { kanji: "飲む", furigana: "のむ" },
+    { kanji: "脳", furigana: "のう" },
+    { kanji: "残る", furigana: "のこる" },
+    { kanji: "覗く", furigana: "のぞく" },
+    { kanji: "星", furigana: "ほし" },
+    { kanji: "本屋", furigana: "ほんや" },
+    { kanji: "本質", furigana: "ほんしつ" },
+    { kanji: "窓", furigana: "まど" },
+    { kanji: "町", furigana: "まち" },
+    { kanji: "待つ", furigana: "まつ" },
+    { kanji: "漫画", furigana: "まんが" },
+    { kanji: "水", furigana: "みず" },
+    { kanji: "道", furigana: "みち" },
+    { kanji: "緑", furigana: "みどり" },
+    { kanji: "見る", furigana: "みる" },
+    { kanji: "虫", furigana: "むし" },
+    { kanji: "昔", furigana: "むかし" },
+    { kanji: "無理", furigana: "むり" },
+    { kanji: "娘", furigana: "むすめ" },
+    { kanji: "目", furigana: "め" },
+    { kanji: "眼鏡", furigana: "めがね" },
+    { kanji: "麺", furigana: "めん" },
+    { kanji: "名刺", furigana: "めいし" },
+    { kanji: "桃", furigana: "もも" },
+    { kanji: "森", furigana: "もり" },
+    { kanji: "門", furigana: "もん" },
+    { kanji: "もっと", furigana: "もっと" },
+    { kanji: "文句", furigana: "もんく" },
+    { kanji: "山", furigana: "やま" },
+    { kanji: "野菜", furigana: "やさい" },
+    { kanji: "約束", furigana: "やくそく" },
+    { kanji: "焼く", furigana: "やく" },
+    { kanji: "役人", furigana: "やくにん" },
+    { kanji: "雪", furigana: "ゆき" },
+    { kanji: "夢", furigana: "ゆめ" },
+    { kanji: "夜", furigana: "よる" },
+    { kanji: "読む", furigana: "よむ" },
+    { kanji: "予定", furigana: "よてい" },
+    { kanji: "喜ぶ", furigana: "よろこぶ" },
+    { kanji: "蘭", furigana: "らん" },
+    { kanji: "落語", furigana: "らくご" },
+    { kanji: "楽", furigana: "らく" },
+    { kanji: "寮", furigana: "りょう" },
+    { kanji: "理解", furigana: "りかい" },
+    { kanji: "留守", furigana: "るす" },
+    { kanji: "類", furigana: "るい" },
+    { kanji: "零", furigana: "れい" },
+    { kanji: "六", furigana: "ろく" },
+    { kanji: "を", furigana: "を" },
+    { kanji: "世界", furigana: "せかい" },
+    { kanji: "空", furigana: "そら" },
+    { kanji: "蕎麦", furigana: "そば" },
+    { kanji: "祖父", furigana: "そふ" },
+    { kanji: "祖母", furigana: "そぼ" },
+    { kanji: "掃除", furigana: "そうじ" },
+    { kanji: "白", furigana: "しろ" },
+    { kanji: "新聞", furigana: "しんぶん" },
+    { kanji: "仕事", furigana: "しごと" },
+    { kanji: "寿司", furigana: "すし" },
+    { kanji: "鈴", furigana: "すず" },
+    { kanji: "好き", furigana: "すき" },
+    { kanji: "凄い", furigana: "すごい" },
+    { kanji: "1", furigana: "いち" },
+    { kanji: "2", furigana: "に" },
+    { kanji: "3", furigana: "さん" },
+    { kanji: "4", furigana: "よん" },
+    { kanji: "5", furigana: "ご" },
+    { kanji: "6", furigana: "ろく" },
+    { kanji: "7", furigana: "なな" },
+    { kanji: "8", furigana: "はち" },
+    { kanji: "9", furigana: "きゅう" },
+    { kanji: "10", furigana: "じゅう" },
+    { kanji: "ケーキ屋", furigana: "ケーキや" },
+    { kanji: "ノーベル賞", furigana: "ノーベルしょう" },
+    { kanji: "ムービー館", furigana: "ムービーかん" },
+    { kanji: "ヨーロッパ人", furigana: "ヨーロッパじん" },
+    { kanji: "ヨーロッパ旅行", furigana: "ヨーロッパりょこう" },
+    { kanji: "思", furigana: "おも" },
+    { kanji: "行", furigana: "い" }
+  ];
+
+  let result = ja;
+  const processedRanges = []; // 記錄已處理的範圍
+  
+  // 按長度排序，長詞優先
+  replacements.sort((a, b) => b.kanji.length - a.kanji.length);
+  
+  // 智能替換：只處理漢字和數字部分
+  for (const { kanji, furigana } of replacements) {
+    let startIndex = 0;
+    while (true) {
+      const index = result.indexOf(kanji, startIndex);
+      if (index === -1) break;
+      
+      // 檢查這個位置是否在平假名/片假名區域內
+      const charBefore = index > 0 ? result[index - 1] : '';
+      const charAfter = index + kanji.length < result.length ? result[index + kanji.length] : '';
+      
+      // 如果前後字符是平假名/片假名，跳過這個位置
+      if (/[\u3040-\u309F\u30A0-\u30FF]/.test(charBefore) || /[\u3040-\u309F\u30A0-\u30FF]/.test(charAfter)) {
+        startIndex = index + kanji.length;
+        continue;
+      }
+      
+      // 檢查是否與已處理範圍重疊
+      const endIndex = index + kanji.length;
+      const isOverlapping = processedRanges.some(range => 
+        (index < range.end && endIndex > range.start)
+      );
+      
+      if (!isOverlapping) {
+        // 形態素解析：檢查是否為い形容詞
+        const morphology = analyzeMorphology(kanji, furigana);
+        
+        let rubyHtml = '';
+        if (morphology.isIAdjective) {
+          // 如果是い形容詞，只對語幹部分添加 ruby，語尾保持原樣
+          rubyHtml = `<ruby><rb>${morphology.stem}</rb><rt>${morphology.stemReading}</rt></ruby>${morphology.okurigana}`;
+        } else {
+          // 一般情況，對整個漢字部分添加 ruby
+          rubyHtml = `<ruby><rb>${kanji}</rb><rt>${furigana}</rt></ruby>`;
+        }
+        
+        // 替換並記錄處理範圍
+        result = result.substring(0, index) + rubyHtml + result.substring(endIndex);
+        
+        processedRanges.push({ start: index, end: index + rubyHtml.length });
+        
+        // 調整後續索引
+        startIndex = index + rubyHtml.length;
+      } else {
+        startIndex = endIndex;
+      }
+    }
+  }
+  
+  return `<div class='ko'>${result}</div>`;
+}
+
+function openDetail(item){ 
+  document.getElementById('bigSym').textContent=item.sym; 
+  
+  // 為大字母卡片添加點擊事件
+  const bigLetter = document.getElementById('bigLetter');
+  bigLetter.onclick = () => speakJa(item.say);
+  
+  const w=document.getElementById('words'); 
+  w.innerHTML=''; 
+  item.words.forEach(([ja,zh,rom])=>{ 
+    const d=document.createElement('div'); 
+    d.className='word'; 
+    d.setAttribute('data-say', ja); 
+    d.innerHTML=`${formatWord(ja, rom)}<div><div class='zh'>${zh}</div><div class='desc'>${rom}</div></div>`; 
+    w.appendChild(d); 
+  }); 
+  const appbars = document.querySelectorAll('.appbar:not(#detailAppbar)');
+  appbars.forEach(ab => ab.style.display='none');
+  document.getElementById('detail').style.display='block'; 
+}
+
+document.addEventListener('click',e=>{ 
+  if(e.target.closest('.speed')) return cycleSpeed(); 
+  const word=e.target.closest('.word'); 
+  if(word && word.getAttribute('data-say')){ 
+    word.classList.add('pulse','amber-temp'); 
+    setTimeout(()=>word.classList.remove('pulse','amber-temp'),350); 
+    speakJa(word.getAttribute('data-say')); 
+    return; 
+  } 
+  const s=e.target.getAttribute('data-say'); 
+  if(s) speakJa(s); 
+});
+
+document.getElementById('back').addEventListener('click',()=>{ 
+  document.getElementById('detail').style.display='none'; 
+  const appbars = document.querySelectorAll('.appbar:not(#detailAppbar)');
+  appbars.forEach(ab => ab.style.display='');
+});
+
+const btnV=document.getElementById('btnV'), btnC=document.getElementById('btnC');
+btnV.addEventListener('click',()=>{btnV.classList.add('teal');btnC.classList.remove('teal');document.getElementById('gridV').style.display='grid';document.getElementById('gridC').style.display='none';});
+btnC.addEventListener('click',()=>{btnC.classList.add('teal');btnV.classList.remove('teal');document.getElementById('gridC').style.display='grid';document.getElementById('gridV').style.display='none';});
+
+updateSpeedUI();
+render();
+</script></body></html>

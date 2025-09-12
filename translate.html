@@ -1,0 +1,431 @@
+<!DOCTYPE html><html lang="zh-Hant"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>日語飯糰｜實時翻譯</title><link rel="manifest" href="manifest.json"><link rel="stylesheet" href="styles.css">
+<link rel="apple-touch-icon" href="icons/icon-512.png"><script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));}</script></head><body>
+<header class="topbar"><div class="bar"><h1 class="title"><img src="icons/p3.svg" alt=""></h1></div></header>
+<div class="appbar"><div class="row" style="justify-content:space-between;gap:12px;max-width:540px;margin:0 auto;padding:12px 16px 6px 16px">
+  <div style="display:flex;gap:12px">
+    <span id="voiceEn" class="pill">Moira</span>
+    <span id="mickey" class="pill"><img src="icons/micky.svg" width="20" height="20" alt=""></span>
+  </div>
+  <span class="pill amber speed">x0.75</span>
+</div></div>
+<main class="wrap">
+  
+  <textarea id="in" placeholder="請輸入要翻譯的句子（支持中文、日文、英文）…"></textarea>
+  <div style="display:flex;gap:8px;margin-top:10px">
+    <button class="pill teal" id="btnGo">翻 譯</button>
+  </div>
+  <div class="result list" id="result"></div>
+</main>
+<nav class="tabbar"><div class="in"><a class='' href='index.html'><span class='ico'><img src='icons/p1.svg' alt=''></span>發音練習</a><a class='' href='travel.html'><span class='ico'><img src='icons/p2.svg' alt=''></span>旅行會話</a><a class='active' href='translate.html'><span class='ico'><img src='icons/p3.svg' alt=''></span>實時翻譯</a><a class='' href='history.html'><span class='ico'><img src='icons/p4.svg' alt=''></span>歷史紀錄</a></div></nav>
+
+<!-- 統一的收藏彈窗樣式 -->
+<section class="modal" id="pickFolder" style="display:none"><div class="sheet">
+  <button class="close" id="pickClose" aria-label="關閉">✕</button>
+  <h3 class="title" style="text-align:center;margin:6px 0 12px 0;color:#78bfc0">收藏到哪個資料夾？</h3>
+  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+    <button class="pill" data-folder="餐廳">餐 廳</button>
+    <button class="pill" data-folder="購物">購 物</button>
+    <button class="pill" data-folder="問路">問 路</button>
+    <button class="pill" data-folder="其他">其 他</button>
+  </div>
+</div></section>
+
+<!-- 確認刪除彈窗 -->
+<section class="modal" id="confirmDelete" style="display:none"><div class="sheet">
+  <button class="close" id="confirmClose" aria-label="關閉">✕</button>
+  <h3 class="title" style="text-align:center;margin:6px 0 12px 0;color:#78bfc0">確定要從收藏移除嗎？</h3>
+  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+    <button class="pill" id="confirmYes">確 定</button>
+    <button class="pill" id="confirmNo">取 消</button>
+  </div>
+</div></section>
+
+<script>
+const EN=["Daniel","Moira","Samantha","Tessa"]; let VOICE_EN_NAME=localStorage.getItem('voiceEnName')||'Moira';
+function availableEnVoices(){ const all=speechSynthesis.getVoices(); return EN.map(n=>all.find(v=>v.name===n)).filter(Boolean); }
+function updateVoiceUI(){ const el=document.getElementById('voiceEn'); if(el) el.textContent=VOICE_EN_NAME; }
+function ensureVoice(){ const avail=availableEnVoices().map(v=>v.name); if(!avail.includes(VOICE_EN_NAME) && avail.length){ VOICE_EN_NAME=avail[0]; localStorage.setItem('voiceEnName', VOICE_EN_NAME); } updateVoiceUI(); }
+window.speechSynthesis.onvoiceschanged=()=>{ ensureVoice(); };
+document.getElementById('mickey').addEventListener('click',e=>e.currentTarget.classList.toggle('on'));
+
+let RATE=0.75; const SPEEDS=[0.5,0.75,1.0];
+function updateSpeedUI(){ document.querySelectorAll('.speed').forEach(el=>{ el.textContent='x'+RATE.toFixed(2).replace(/\.00$/,''); }); }
+function cycleSpeed(){ const i=SPEEDS.indexOf(RATE); RATE=SPEEDS[(i+1)%SPEEDS.length]; updateSpeedUI(); }
+
+function speakJA(t){ 
+  // 修正「行って」的發音問題
+  const correctedText = t.replace(/行って/g, 'いって');
+  const u=new SpeechSynthesisUtterance(correctedText);
+  u.lang='ja-JP';
+  u.rate=RATE; 
+  const v=speechSynthesis.getVoices().find(v=>/ja/i.test(v.lang||'')); 
+  if(v) u.voice=v; 
+  speechSynthesis.speak(u);
+} 
+function speakEN(t){ const v=speechSynthesis.getVoices().find(v=>v.name===VOICE_EN_NAME)||speechSynthesis.getVoices().find(v=>/en/i.test(v.lang||'')); const u=new SpeechSynthesisUtterance(t); if(v) u.voice=v; u.rate=RATE; if(document.getElementById('mickey').classList.contains('on')) u.pitch=1.6; speechSynthesis.speak(u);} 
+
+async function tMM(q,from,to){ const r=await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(q)}&langpair=${from}|${to}`); const j=await r.json(); return j?.responseData?.translatedText || ""; }
+async function tLibre(q,from,to){ const r=await fetch("https://libretranslate.de/translate", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({q,source:from,target:to})}); const j=await r.json(); return j?.translatedText || ""; }
+
+async function doTranslate(text){ 
+  let ja="",en="",zh=""; 
+  
+  // 檢測輸入語言
+  const isJapanese = /[\u3040-\u309F\u30A0-\u30FF]/.test(text); // 日文字符範圍（平假名、片假名）
+  const isChinese = /[\u4E00-\u9FFF]/.test(text); // 中文字符範圍
+  
+  if(isJapanese) {
+    // 日文輸入：翻譯成中文和英文
+    try{zh=await tMM(text,"ja","zh-TW");}catch(e){}
+    try{en=await tMM(text,"ja","en");}catch(e){}
+    if(!zh){try{zh=await tLibre(text,"ja","zh");}catch(e){}}
+    if(!en){try{en=await tLibre(text,"ja","en");}catch(e){}}
+    return {ja:text,en,zh};
+  } else if(isChinese) {
+    // 中文輸入：翻譯成日文和英文
+    try{en=await tMM(text,"zh-TW","en");}catch(e){}
+    try{ja=await tMM(text,"zh-TW","ja");}catch(e){}
+    if(!en){try{en=await tLibre(text,"zh","en");}catch(e){}}
+    if(!ja){try{ja=await tLibre(text,"zh","ja");}catch(e){}}
+    return {ja,en,zh:text};
+  } else {
+    // 英文或其他語言輸入：翻譯成中文和日文
+    try{zh=await tMM(text,"en","zh-TW");}catch(e){}
+    try{ja=await tMM(text,"en","ja");}catch(e){}
+    if(!zh){try{zh=await tLibre(text,"en","zh");}catch(e){}}
+    if(!ja){try{ja=await tLibre(text,"en","ja");}catch(e){}}
+    return {ja,en:text,zh};
+  }
+}
+
+function hist(){ try{ return JSON.parse(localStorage.getItem('japanese-history')||'[]'); }catch(e){ return []; } }
+function saveHist(entry){ const h=hist(); const dedup=h.filter(it=>!(it.zh===entry.zh && it.en===entry.en && it.ja===entry.ja)); dedup.unshift(Object.assign({ts:Date.now()}, entry)); localStorage.setItem('japanese-history', JSON.stringify(dedup.slice(0,10))); }
+
+function favs(){ 
+  try{ 
+    return JSON.parse(localStorage.getItem('japanese-favorites')||'[]'); 
+  }catch(e){ 
+    return []; 
+  } 
+}
+
+function isFav(ja, en, zh){ 
+  return favs().some(f=>f.ja===ja && f.en===en && f.zh===zh); 
+}
+
+function formatWord(ja) {
+  const hasKanji = /[\u4E00-\u9FFF]/.test(ja);
+  if (!hasKanji) return ja;
+
+  // 檢查是否已經包含 ruby 標籤，避免重複處理
+  if (ja.includes('<ruby>')) return ja;
+
+  // 形態素解析：處理い形容詞的語幹分離
+  function analyzeMorphology(word, reading) {
+    // い形容詞的語尾模式
+    const iAdjectiveEndings = ['い', 'しい', 'ない', 'たい', 'らしい'];
+    
+    // 檢查是否為い形容詞
+    for (const ending of iAdjectiveEndings) {
+      if (reading.endsWith(ending) && word.endsWith('い')) {
+        const stemReading = reading.slice(0, -ending.length);
+        const stemWord = word.slice(0, -1); // 移除最後的「い」
+        
+        // 如果語幹部分有漢字，返回語幹的平假名
+        if (/[\u4E00-\u9FFF]/.test(stemWord)) {
+          return { 
+            stem: stemWord, 
+            stemReading: stemReading, 
+            okurigana: word.slice(-1), // 語尾部分
+            isIAdjective: true 
+          };
+        }
+      }
+    }
+    
+    return { stem: word, stemReading: reading, okurigana: '', isIAdjective: false };
+  }
+
+  // 智能詞彙映射表 - 按長度排序，整詞優先
+  const wordMap = [
+    // 完整詞彙（優先匹配）
+    { from: "携帯電話番号", to: "けいたいでんわばんごう" },
+    { from: "携帯電話", to: "けいたいでんわ" },
+    { from: "置き換える", to: "おきかえる" },
+    { from: "真っ直ぐ", to: "まっすぐ" },
+    { from: "大丈夫", to: "だいじょうぶ" },
+    { from: "有難う", to: "ありがとう" },
+    { from: "助けて", to: "たすけて" },
+    { from: "お勧め", to: "おすすめ" },
+    { from: "会計", to: "かいけい" },
+    { from: "別々", to: "べつべつ" },
+    { from: "試着", to: "しちゃく" },
+    { from: "幾ら", to: "いくら" },
+    { from: "割引", to: "わりびき" },
+    { from: "写真", to: "しゃしん" },
+    { from: "場所", to: "ばしょ" },
+    { from: "お金", to: "おかね" },
+    { from: "追加", to: "ついか" },
+    { from: "場合", to: "ばあい" },
+    { from: "行って", to: "いって" },
+    
+    // 部分詞彙（次優先）
+    { from: "携帯", to: "けいたい" },
+    { from: "電話", to: "でんわ" },
+    { from: "番号", to: "ばんごう" },
+    { from: "入力", to: "にゅうりょく" },
+    
+    // 單字（最後處理）
+    { from: "何", to: "なに" },
+    { from: "物", to: "もの" },
+    { from: "払", to: "はら" },
+    { from: "辛", to: "から" },
+    { from: "他", to: "ほか" },
+    { from: "色", to: "いろ" },
+    { from: "右", to: "みぎ" },
+    { from: "左", to: "ひだり" },
+    { from: "道", to: "みち" },
+    { from: "教", to: "おし" },
+    { from: "食", to: "た" },
+    { from: "持", to: "も" },
+    { from: "携", to: "けい" },
+    { from: "帯", to: "たい" },
+    { from: "電", to: "でん" },
+    { from: "話", to: "わ" },
+    { from: "番", to: "ばん" },
+    { from: "号", to: "ごう" },
+    { from: "入", to: "にゅう" },
+    { from: "力", to: "りょく" }
+  ];
+
+  let result = ja;
+  const processedRanges = []; // 記錄已處理的範圍
+  
+  // 按長度排序，長詞優先
+  wordMap.sort((a, b) => b.from.length - a.from.length);
+  
+  // 智能替換：避免重疊處理
+  for (const { from, to } of wordMap) {
+    let startIndex = 0;
+    while (true) {
+      const index = result.indexOf(from, startIndex);
+      if (index === -1) break;
+      
+      // 檢查是否與已處理範圍重疊
+      const endIndex = index + from.length;
+      const isOverlapping = processedRanges.some(range => 
+        (index < range.end && endIndex > range.start)
+      );
+      
+      if (!isOverlapping) {
+        // 形態素解析：檢查是否為い形容詞
+        const morphology = analyzeMorphology(from, to);
+        
+        let rubyHtml = '';
+        if (morphology.isIAdjective) {
+          // 如果是い形容詞，只對語幹部分添加 ruby，語尾保持原樣
+          rubyHtml = `<ruby><rb>${morphology.stem}</rb><rt>${morphology.stemReading}</rt></ruby>${morphology.okurigana}`;
+        } else {
+          // 一般情況，對整個漢字部分添加 ruby
+          rubyHtml = `<ruby><rb>${from}</rb><rt>${to}</rt></ruby>`;
+        }
+        
+        // 替換並記錄處理範圍
+        result = result.substring(0, index) + rubyHtml + result.substring(endIndex);
+        
+        processedRanges.push({ start: index, end: index + rubyHtml.length });
+        
+        // 調整後續索引
+        startIndex = index + rubyHtml.length;
+      } else {
+        startIndex = endIndex;
+      }
+    }
+  }
+  
+  return result;
+}
+
+function renderCard(text,out,starId){ 
+  const card=document.createElement('div'); 
+  const isFavorited = isFav(out.ja, out.en, out.zh || text);
+  card.className='card'; 
+  card.innerHTML=`
+    <div class='ko' data-original='${out.ja||"(日文失敗)"}'>${formatWord(out.ja||"(日文失敗)")}</div>
+    <div class='en'>${out.en||"(英文失敗)"}</div>
+    <div class='zh'>${out.zh||text}</div>
+    <div class='badges'>
+      <span class='badge' data-ja='${out.ja}'>日</span>
+      <span class='badge' data-en='${out.en}'>英</span>
+      <span class='star ${isFavorited?'on':''}' id='${starId}' title='${isFavorited?'已收藏':'收藏'}'>
+        <img src='icons/${isFavorited?'onigiri-yellow':'onigiri'}.svg' alt='${isFavorited?'已收藏':'收藏'}' />
+      </span>
+    </div>
+  `; 
+  const result=document.getElementById('result'); 
+  result.innerHTML=''; 
+  result.appendChild(card); 
+}
+
+async function translateAndMaybeSave(save){ 
+  const btn=document.getElementById('btnGo'); 
+  const text=(document.getElementById('in').value||'').trim(); 
+  if(!text) return; 
+  const old=btn.innerHTML; 
+  btn.classList.add('pulse','busy','amber-temp'); 
+  btn.textContent='翻 譯 中'; 
+  const out=await doTranslate(text); 
+  renderCard(text,out,'fstar'); 
+  if(save){ saveHist({ja:out.ja,en:out.en,zh:out.zh||text}); } 
+  const card=document.querySelector('.card'); 
+  if(card) card.classList.add('flash'); 
+  setTimeout(()=>{ 
+    btn.classList.remove('pulse','busy','amber-temp'); 
+    btn.textContent='翻 譯'; 
+    if(card) card.classList.remove('flash'); 
+  },400); 
+}
+
+document.getElementById('btnGo').addEventListener('click',()=>translateAndMaybeSave(true));
+ 
+function cycleVoice(){ 
+  const avail=availableEnVoices().map(v=>v.name); 
+  if(!avail.length) return; 
+  const idx=avail.indexOf(VOICE_EN_NAME); 
+  VOICE_EN_NAME=avail[(idx+1)%avail.length]; 
+  localStorage.setItem('voiceEnName', VOICE_EN_NAME); 
+  updateVoiceUI(); 
+}
+
+let PENDING_STAR=null; // {ja,en,zh,el}
+let PENDING_DELETE=null; // {ja,en,zh,el}
+
+// 處理複製事件，確保複製的是純文字版本
+document.addEventListener('copy', e => {
+  const selection = window.getSelection();
+  if (selection.rangeCount > 0) {
+    const range = selection.getRangeAt(0);
+    const container = range.commonAncestorContainer;
+    const koElement = container.nodeType === Node.TEXT_NODE ? 
+      container.parentElement.closest('.ko') : 
+      container.closest('.ko');
+    
+    if (koElement && koElement.hasAttribute('data-original')) {
+      e.preventDefault();
+      const originalText = koElement.getAttribute('data-original');
+      e.clipboardData.setData('text/plain', originalText);
+    }
+  }
+});
+
+document.addEventListener('click', (e)=>{ 
+  if(e.target.closest('#voiceEn')) return cycleVoice(); 
+  if(e.target.closest('.speed')) return cycleSpeed(); 
+  
+  if(e.target.matches('[data-ja]')){ 
+    e.target.classList.add('pulse','amber-temp'); 
+    setTimeout(()=>e.target.classList.remove('pulse','amber-temp'),350); 
+    return speakJA(e.target.getAttribute('data-ja')); 
+  } 
+  
+  if(e.target.matches('[data-en]')){ 
+    e.target.classList.add('pulse','amber-temp'); 
+    setTimeout(()=>e.target.classList.remove('pulse','amber-temp'),350); 
+    return speakEN(e.target.getAttribute('data-en')); 
+  }
+
+  // 點擊星號收藏/取消收藏
+  if(e.target.id==='fstar' || e.target.closest('.star')){ 
+    const starEl = e.target.closest('.star') || e.target;
+    const c=starEl.closest('.card'); 
+    const ja=c.querySelector('.ko').textContent;
+    const en=c.querySelector('.en').textContent;
+    const zh=c.querySelector('.zh').textContent;
+    
+    if(starEl.classList.contains('on')){ 
+      // 已收藏，顯示確認刪除
+      PENDING_DELETE={ja, en, zh, el:starEl};
+      document.getElementById('confirmDelete').style.display='flex'; 
+    } else { 
+      // 未收藏，顯示選擇資料夾
+      PENDING_STAR={ja, en, zh, el:starEl};
+      document.getElementById('pickFolder').style.display='flex'; 
+    }
+    return; 
+  }
+
+  // 選擇收藏夾
+  if(e.target.matches('[data-folder]')){ 
+    const folder=e.target.getAttribute('data-folder'); 
+    if(PENDING_STAR){ 
+      const favsList=JSON.parse(localStorage.getItem('japanese-favorites')||'[]'); 
+      favsList.unshift({
+        ja:PENDING_STAR.ja,
+        en:PENDING_STAR.en,
+        zh:PENDING_STAR.zh,
+        folder,
+        ts:Date.now()
+      }); 
+      localStorage.setItem('japanese-favorites', JSON.stringify(favsList)); 
+      PENDING_STAR.el.classList.add('on'); 
+      PENDING_STAR.el.title='已收藏';
+      PENDING_STAR.el.querySelector('img').src='icons/onigiri-yellow.svg';
+      PENDING_STAR=null; 
+    } 
+    document.getElementById('pickFolder').style.display='none'; 
+    return; 
+  }
+
+  // 確認刪除
+  if(e.target.id==='confirmYes' && PENDING_DELETE){ 
+    const favsList=JSON.parse(localStorage.getItem('japanese-favorites')||'[]'); 
+    const filtered = favsList.filter(f=>!(f.ja===PENDING_DELETE.ja && f.en===PENDING_DELETE.en && f.zh===PENDING_DELETE.zh)); 
+    localStorage.setItem('japanese-favorites', JSON.stringify(filtered)); 
+    PENDING_DELETE.el.classList.remove('on'); 
+    PENDING_DELETE.el.title='收藏';
+    PENDING_DELETE.el.querySelector('img').src='icons/onigiri.svg';
+    PENDING_DELETE=null;
+    document.getElementById('confirmDelete').style.display='none'; 
+    return; 
+  }
+  
+  if(e.target.id==='confirmNo' || e.target.id==='confirmClose'){ 
+    PENDING_DELETE=null;
+    document.getElementById('confirmDelete').style.display='none'; 
+    return; 
+  }
+
+  // 點擊彈窗背景關閉
+  if(e.target.id==='pickFolder') { 
+    PENDING_STAR = null;
+    document.getElementById('pickFolder').style.display='none'; 
+    return; 
+  }
+  
+  if(e.target.id==='confirmDelete') { 
+    PENDING_DELETE=null;
+    document.getElementById('confirmDelete').style.display='none'; 
+    return; 
+  }
+
+  // 防止點擊彈窗內容區域時關閉
+  if(e.target.closest('#pickFolder .sheet') && !e.target.matches('[data-folder]') && !e.target.matches('#pickClose')){ 
+    return; 
+  }
+  
+  if(e.target.closest('#confirmDelete .sheet') && !e.target.matches('#confirmYes, #confirmNo')){ 
+    return; 
+  }
+});
+
+// 關閉按鈕
+document.getElementById('pickClose').addEventListener('click',()=>{ 
+  PENDING_STAR = null;
+  document.getElementById('pickFolder').style.display='none'; 
+});
+
+ensureVoice(); 
+updateSpeedUI();
+</script></body></html>
