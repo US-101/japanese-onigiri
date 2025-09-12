@@ -317,3 +317,10 @@ main{ padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 
 @media (max-width: 420px){
   #cards .card{ padding: 12px 12px; }  /* 由 12px 14px 再收一點 */
 }
+
+/* 強化日文換行：避免孤立單字掉行 */
+#cards .card .ja {
+  text-wrap: balance;
+  text-align: justify;          /* 讓瀏覽器拉開間距，避免單字獨行 */
+  text-justify: inter-character;/* 對齊用字間距而不是空白 */
+}
