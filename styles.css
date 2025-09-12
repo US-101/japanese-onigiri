@@ -573,3 +573,95 @@ rt{ font-size:.6em; line-height:1; letter-spacing:0; user-select:none; }
     justify-content: flex-start;
   }
 }
+/* === [FINAL] Conversation cards: travel / translate / history === */
+/* 統一：左側文字(ko/en/zh) 直向排列；右側按鈕；窄螢幕按鈕落到下方，不遮字 */
+
+/* 版面：兩欄（文字 / 按鈕） */
+.list .card,
+#cards .card{
+  display: grid !important;
+  grid-template-columns: minmax(0,1fr) auto !important; /* 左：文字 右：按鈕 */
+  align-items: start !important;
+  column-gap: 12px !important;
+}
+
+/* 文字容器：把 ko/en/zh 都放這裡直排 */
+.list .card .text,
+#cards .card .text{
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+}
+
+/* 右側按鈕（兼容舊 .badges / 新 .actions），絕對定位一律關掉 */
+.list .card .actions,
+.list .card .badges,
+#cards .card .actions,
+#cards .card .badges{
+  position: static !important;
+  display: flex !important;
+  gap: 8px !important;
+  align-self: start !important;
+  top: auto !important; right: auto !important; left: auto !important;
+}
+
+/* 窄螢幕：按鈕掉到下方 */
+@media (max-width: 380px){
+  .list .card, #cards .card{ grid-template-columns: 1fr !important; }
+  .list .card .actions, .list .card .badges,
+  #cards .card .actions, #cards .card .badges{ margin-top: 6px !important; }
+}
+
+/* ===== 文字樣式（ko/en/zh）統一 ===== */
+
+/* 日文：不要亂斷、單行顯示；不足寬度可左右滑（你說整句放一行） */
+.list .card .ko,
+#cards .card .ko{
+  display: block !important;
+  white-space: nowrap !important;     /* 強制單行 */
+  overflow-x: auto !important;        /* 放不下可橫向捲動 */
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;   /* 關掉 break-word */
+  line-break: strict !important;
+  -webkit-line-break: strict !important;
+  letter-spacing: .01em !important;
+  line-height: 1.7 !important;
+  max-width: none !important;         /* 解除舊的 calc(100% - 120px) */
+  padding-top: 0 !important;          /* 解除舊規則抬高 */
+}
+
+/* 英文 */
+.list .card .en,
+#cards .card .en{
+  display: block !important;
+  text-align: left !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere !important;
+  hyphens: auto !important;
+  line-height: 1.5 !important;
+}
+
+/* 中文 */
+.list .card .zh,
+#cards .card .zh{
+  display: block !important;
+  text-align: left !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  word-break: keep-all !important;
+  line-break: strict !important;
+  -webkit-line-break: strict !important;
+  text-wrap: pretty !important;
+  line-height: 1.6 !important;
+}
+
+/* Furigana 不要撐開行高 */
+ruby{ ruby-position: over; }
+rt{ font-size: .6em; line-height: 1; letter-spacing: 0; user-select: none; }
+
+/* 小螢幕再給句子多點寬度 */
+@media (max-width: 420px){
+  .list .card, #cards .card{ padding: 12px 12px !important; }
+}
