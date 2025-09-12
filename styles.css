@@ -502,3 +502,74 @@ rt{ font-size:.6em; line-height:1; letter-spacing:0; user-select:none; }
 @media (max-width:420px){
   .list .card, #cards .card{ padding:12px 12px; }
 }
+
+/* === Unified conversation card style (travel / translate / history) === */
+
+/* 會話卡片：左文字、右按鈕 */
+.list .card,
+#cards .card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto; /* 左：文字，右：按鈕 */
+  align-items: start;
+  column-gap: 12px;
+}
+
+/* 文字區統一垂直排列 (日/英/中) */
+.list .card .text,
+#cards .card .text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;           /* 語言間距 */
+  min-width: 0;       /* 保證縮放時不擠壞 */
+}
+
+/* 日文：不亂斷行 */
+.list .card .ko,
+#cards .card .ko {
+  word-break: keep-all;
+  line-break: strict;
+  -webkit-line-break: strict;
+  letter-spacing: .01em;
+  line-height: 1.7;
+  white-space: normal;
+}
+
+/* 英文：允許斷字 */
+.list .card .en,
+#cards .card .en {
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  line-height: 1.5;
+}
+
+/* 中文：正常顯示 */
+.list .card .zh,
+#cards .card .zh {
+  word-break: keep-all;
+  line-break: strict;
+  -webkit-line-break: strict;
+  text-wrap: pretty;
+  line-height: 1.6;
+}
+
+/* 按鈕固定在右邊 */
+.list .card .actions,
+#cards .card .actions {
+  display: flex;
+  gap: 8px;
+  align-self: start;
+  position: static !important; /* 取消絕對定位，避免壓文字 */
+}
+
+/* 窄螢幕：按鈕掉到下面 */
+@media (max-width: 380px) {
+  .list .card,
+  #cards .card {
+    grid-template-columns: 1fr;
+  }
+  .list .card .actions,
+  #cards .card .actions {
+    margin-top: 6px;
+    justify-content: flex-start;
+  }
+}
