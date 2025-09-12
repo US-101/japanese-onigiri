@@ -324,3 +324,13 @@ main{ padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 
   text-align: justify;          /* 讓瀏覽器拉開間距，避免單字獨行 */
   text-justify: inter-character;/* 對齊用字間距而不是空白 */
 }
+
+#cards .card .ja {
+  word-break: keep-all;
+  line-break: strict;
+  text-wrap: balance;
+  min-inline-size: 6em;
+  widows: 3;
+  text-align: justify;
+  text-justify: inter-character;
+}
