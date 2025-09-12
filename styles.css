@@ -428,3 +428,99 @@ main{ padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 
   line-height: 1.75;
 }
 
+
+
+/* === Unified conversation cards (travel / translate / history) === */
+
+/* 版面：左文字，右按鈕；窄螢幕按鈕掉下去 */
+.list .card,
+#cards .card {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: start !important;
+  column-gap: 12px !important;
+}
+
+.list .card .text,
+#cards .card .text {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+}
+
+/* 右側按鈕／徽章：固定靠右，非絕對定位 */
+.list .card .actions,
+.list .card .badges,
+#cards .card .actions,
+#cards .card .badges {
+  position: static !important;
+  display: flex !important;
+  gap: 8px !important;
+  align-self: start !important;
+}
+
+@media (max-width: 380px) {
+  .list .card,
+  #cards .card {
+    grid-template-columns: 1fr !important;
+  }
+  .list .card .actions,
+  .list .card .badges,
+  #cards .card .actions,
+  #cards .card .badges {
+    margin-top: 6px !important;
+    justify-content: flex-start !important;
+  }
+}
+
+/* 日文：一行顯示，超出橫向捲動，不亂拆字 */
+.list .card .ko,
+#cards .card .ko {
+  display: block !important;
+  white-space: nowrap !important;
+  overflow-x: auto !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+  line-break: strict !important;
+  -webkit-line-break: strict !important;
+  letter-spacing: .01em !important;
+  line-height: 1.7 !important;
+  max-width: none !important;
+}
+
+/* 英文：允許自動換行 */
+.list .card .en,
+#cards .card .en {
+  display: block !important;
+  text-align: left !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere !important;
+  hyphens: auto !important;
+  line-height: 1.5 !important;
+}
+
+/* 中文：正常換行 */
+.list .card .zh,
+#cards .card .zh {
+  display: block !important;
+  text-align: left !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  word-break: keep-all !important;
+  line-break: strict !important;
+  -webkit-line-break: strict !important;
+  text-wrap: pretty !important;
+  line-height: 1.6 !important;
+}
+
+/* Furigana (假名) 縮小，不撐開行高 */
+ruby { ruby-position: over; }
+rt { font-size: .6em; line-height: 1; letter-spacing: 0; user-select: none; }
+
+/* 小螢幕：卡片左右留白縮小 */
+@media (max-width: 420px) {
+  .list .card,
+  #cards .card { padding: 12px 12px !important; }
+}
