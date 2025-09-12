@@ -334,3 +334,22 @@ main{ padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 
   text-align: justify;
   text-justify: inter-character;
 }
+
+/* 日文卡片句子：避免孤字行 */
+#cards .card .ja {
+  word-break: keep-all;
+  line-break: strict;
+  -webkit-line-break: strict;
+  text-wrap: balance;
+  line-height: 1.75;
+  letter-spacing: 0.01em;
+
+  /* 重點：避免最後一行只有 1 個字 */
+  min-inline-size: 6em;         /* 一行最少 6 個全形字寬 */
+  widows: 2;                    /* 最後至少留 2 個字 (支援度有限) */
+  orphans: 2;                   /* 第一行至少 2 個字 (支援度有限) */
+
+  /* 如果真的要強行平均，讓字距調整 */
+  text-align: justify;
+  text-justify: inter-character;
+}
