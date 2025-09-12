@@ -178,11 +178,51 @@ textarea{width:100%;min-height:120px;border:2px solid #cfe7e7;border-radius:14px
   align-items:start;
 }
 #cards .card .text{ min-width:0; }
-#cards .card .ko{ word-break: keep-all; overflow-wrap: anywhere; line-height:1.6; }
+
+/* === CJK / EN 不同換行策略 === */
+/* 旅行會話卡片內的日文（避免醜斷行） */
+#cards .card .ko{
+  word-break: keep-all;        /* 不在任意字元拆開（適合日文/中文） */
+  overflow-wrap: normal;       /* 取消 anywhere，避免奇怪的位置換行 */
+  line-break: strict;          /* CJK 嚴格換行規則 */
+  -webkit-line-break: strict;  /* Safari 補強 */
+  text-wrap: pretty;           /* 新版瀏覽器：更漂亮的標點/禁則處理 */
+  hanging-punctuation: allow-end;
+  letter-spacing: 0.01em;
+  line-height: 1.7;
+}
+
+/* 如瀏覽器支援 balance，標題式句子更平均（不會單獨掉字） */
+@supports (text-wrap: balance){
+  #cards .card .ko{ text-wrap: balance; }
+}
+
+/* 英文可在必要時斷字，不影響日文 */
+#cards .card .en{
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  line-height: 1.5;
+}
+
+/* 中文可與日文相同策略（可選） */
+#cards .card .zh{
+  word-break: keep-all;
+  overflow-wrap: normal;
+  line-break: strict;
+  -webkit-line-break: strict;
+  text-wrap: pretty;
+  line-height: 1.6;
+}
+
 #cards .card .actions{ display:flex; gap:8px; align-self:start; }
 
 /* 小螢幕：按鈕自動掉到下一行，避免遮擋 */
 @media (max-width: 380px){
   #cards .card{ grid-template-columns: 1fr; }
   #cards .card .actions{ margin-top:6px; justify-content:flex-start; }
+}
+
+/* 手機寬度微調：給句子多一點寬度 */
+@media (max-width: 400px){
+  #cards .card{ padding: 12px 14px; } /* 原本 14px 16px */
 }
