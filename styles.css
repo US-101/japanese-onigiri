@@ -226,3 +226,83 @@ textarea{width:100%;min-height:120px;border:2px solid #cfe7e7;border-radius:14px
 @media (max-width: 400px){
   #cards .card{ padding: 12px 14px; } /* 原本 14px 16px */
 }
+
+/* ====== CJK/EN line wrapping (travel cards) ====== */
+#cards .card .ja{
+  word-break: keep-all;
+  overflow-wrap: normal;
+  line-break: strict;
+  -webkit-line-break: strict;
+  text-wrap: balance;
+  line-height: 1.7;
+  letter-spacing: .01em;
+}
+@supports not (text-wrap: balance){
+  #cards .card .ja{ text-wrap: pretty; }
+}
+#cards .card .zh{
+  word-break: keep-all;
+  overflow-wrap: normal;
+  line-break: strict;
+  -webkit-line-break: strict;
+  text-wrap: pretty;
+  line-height: 1.6;
+}
+#cards .card .en{
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  line-height: 1.5;
+}
+
+/* ====== Buttons never cover text (travel cards) ====== */
+#cards .card{
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: start;
+  column-gap: 12px;
+}
+#cards .card .text{ min-width: 0; }        /* 讓文字區能收縮 */
+#cards .card .actions{
+  display: flex;
+  gap: 8px;
+  align-self: start;
+  position: static !important;             /* 強制不是絕對定位 */
+}
+@media (max-width: 380px){
+  #cards .card{ grid-template-columns: 1fr; }
+  #cards .card .actions{ margin-top: 6px; }
+}
+
+/* 小螢幕卡片左右留白微縮，讓句子更寬 */
+@media (max-width: 420px){
+  #cards .card{ padding: 12px 14px; }
+}
+
+/* ====== Bottom tab bar fixed & safe area ====== */
+:root{ --tabbar-h: 68px; }
+
+.tabbar{
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  height: var(--tabbar-h);
+  z-index: 1000;
+  backdrop-filter: saturate(180%) blur(8px);
+}
+.tabbar .in{ height: 100%; }
+
+/* 主要內容底部留出空間（含安全區） */
+.wrap{
+  padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 16px);
+}
+
+/* 有些頁面主體不是 .wrap 的，保底處理 */
+main{ padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 16px); }
+
+/* iOS 安全區底邊距補強（如果有需要） */
+@supports(padding: max(0px)){
+  .tabbar{ padding-bottom: max(env(safe-area-inset-bottom), 0px); }
+}
+
+/* ====== Appbar/速度區塊微調（避免頂部擠） ====== */
+.appbar .row{ align-items: center; }
+.speed{ white-space: nowrap; }  /* 避免 x0.75 被換行 */
