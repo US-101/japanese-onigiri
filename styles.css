@@ -522,5 +522,80 @@ rt { font-size: .6em; line-height: 1; letter-spacing: 0; user-select: none; }
 /* 小螢幕：卡片左右留白縮小 */
 @media (max-width: 420px) {
   .list .card,
-  #cards .card { padding: 12px 12px !important; }
+  #cards .card { padding: 12px 12px !/* === Make translate & history cards look like travel cards === */
+
+/* 版面：左=文字(直排) 右=按鈕；窄螢幕按鈕掉下方 */
+.list .card,
+#cards .card{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:start;
+  column-gap:12px;
 }
+
+/* 左側文字容器：日/英/中垂直排列 */
+.list .card .text,
+#cards .card .text{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  min-width:0;
+}
+
+/* 右側按鈕（含 .badges/.actions），統一非絕對定位 */
+.list .card .actions, .list .card .badges,
+#cards .card .actions, #cards .card .badges{
+  position:static !important;
+  display:flex;
+  gap:8px;
+  align-self:start;
+}
+
+@media (max-width:380px){
+  .list .card, #cards .card{ grid-template-columns:1fr; }
+  .list .card .actions, .list .card .badges,
+  #cards .card .actions, #cards .card .badges{ margin-top:6px; }
+}
+
+/* —— 文案樣式：跟旅行會話一致 —— */
+/* 日文：正常換行（不亂拆），行高和假名一致 */
+.list .card .ko,
+#cards .card .ko{
+  display:block;
+  white-space:normal;
+  word-break:keep-all;
+  overflow-wrap:normal;
+  line-break:strict;
+  -webkit-line-break:strict;
+  letter-spacing:.01em;
+  line-height:1.7;
+}
+
+/* 英文：可在需要時斷字 */
+.list .card .en, #cards .card .en{
+  display:block;
+  overflow-wrap:anywhere;
+  hyphens:auto;
+  line-height:1.5;
+}
+
+/* 中文：正常換行 */
+.list .card .zh, #cards .card .zh{
+  display:block;
+  word-break:keep-all;
+  line-break:strict;
+  -webkit-line-break:strict;
+  text-wrap:pretty;
+  line-height:1.6;
+}
+
+/* Furigana 不撐開行高（與旅行頁一致） */
+ruby{ ruby-position:over; }
+rt{ font-size:.6em; line-height:1; letter-spacing:0; user-select:none; }
+
+/* 卡片左右留白微縮（小螢幕看起來更像旅行頁） */
+@media (max-width:420px){
+  .list .card, #cards .card{ padding:12px 12px; }
+}
+
+
