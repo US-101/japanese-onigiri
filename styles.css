@@ -415,3 +415,15 @@ main{ padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 
   #cards .card .badges, #cards .card .actions,
   .list .card .badges, .list .card .actions{ margin-top: 6px; }
 }
+
+/* === Travel cards + 歷史紀錄：日文句子強制單行 === */
+#cards .card .ko,
+.list .card .ko {
+  white-space: nowrap;     /* 強制整句單行 */
+  overflow-x: auto;        /* 放不下時橫向捲動，而不是亂拆字 */
+  word-break: keep-all;
+  line-break: strict;
+  -webkit-line-break: strict;
+  letter-spacing: 0.01em;
+  line-height: 1.75;
+}
