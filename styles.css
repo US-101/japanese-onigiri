@@ -307,49 +307,70 @@ main{ padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 
 .appbar .row{ align-items: center; }
 .speed{ white-space: nowrap; }  /* 避免 x0.75 被換行 */
 
-/* 讓日文分行更平均（支援的瀏覽器會更好看） */
-#cards .card .ja{ text-wrap: balance; }
-@supports not (text-wrap: balance){
-  #cards .card .ja{ text-wrap: pretty; }
+/* === 列表型卡片（旅行會話＋歷史紀錄）統一修正 === */
+
+/* 版面：左文字、右按鈕；窄螢幕按鈕自動換行，不遮字 */
+.list .card{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:start;
+  column-gap:12px;
+}
+.list .card .text{ min-width:0; }
+.list .card .actions,
+.list .card .badges{
+  position:static !important;   /* 取消絕對定位，避免壓到文字 */
+  display:flex;
+  gap:8px;
+  align-self:start;
+}
+@media (max-width:380px){
+  .list .card{ grid-template-columns:1fr; }
+  .list .card .actions,
+  .list .card .badges{ margin-top:6px; }
 }
 
-/* 微增卡片可用寬：讓句子更不容易拆 */
-@media (max-width: 420px){
-  #cards .card{ padding: 12px 12px; }  /* 由 12px 14px 再收一點 */
+/* 日文區塊（你的 DOM 用 .ko）：漂亮換行＋避免孤字行 */
+.list .card .ko{
+  /* 先解除舊的強迫斷字與寬度限制 */
+  max-width:none !important;
+  word-wrap:normal !important;
+  overflow-wrap:normal !important;
+
+  /* CJK 友善換行 */
+  word-break:keep-all;
+  line-break:strict;
+  -webkit-line-break:strict;
+  text-wrap:balance;            /* 新瀏覽器平均分行 */
+  letter-spacing:.01em;
+  line-height:1.75;
+
+  /* 避免最後只剩 1 個字（瀏覽器盡力而為） */
+  min-inline-size:6em;
+  widows:2;
+  orphans:2;
+
+  /* 空間不足時用字距補齊，避免孤字行 */
+  text-align:justify;
+  text-justify:inter-character;
 }
 
-/* 強化日文換行：避免孤立單字掉行 */
-#cards .card .ja {
-  text-wrap: balance;
-  text-align: justify;          /* 讓瀏覽器拉開間距，避免單字獨行 */
-  text-justify: inter-character;/* 對齊用字間距而不是空白 */
+/* 英文／中文在兩頁面也一致處理 */
+.list .card .en{
+  overflow-wrap:anywhere;
+  hyphens:auto;
+  line-height:1.5;
+}
+.list .card .zh{
+  word-break:keep-all;
+  overflow-wrap:normal;
+  line-break:strict;
+  -webkit-line-break:strict;
+  text-wrap:pretty;
+  line-height:1.6;
 }
 
-#cards .card .ja {
-  word-break: keep-all;
-  line-break: strict;
-  text-wrap: balance;
-  min-inline-size: 6em;
-  widows: 3;
-  text-align: justify;
-  text-justify: inter-character;
-}
-
-/* 日文卡片句子：避免孤字行 */
-#cards .card .ja {
-  word-break: keep-all;
-  line-break: strict;
-  -webkit-line-break: strict;
-  text-wrap: balance;
-  line-height: 1.75;
-  letter-spacing: 0.01em;
-
-  /* 重點：避免最後一行只有 1 個字 */
-  min-inline-size: 6em;         /* 一行最少 6 個全形字寬 */
-  widows: 2;                    /* 最後至少留 2 個字 (支援度有限) */
-  orphans: 2;                   /* 第一行至少 2 個字 (支援度有限) */
-
-  /* 如果真的要強行平均，讓字距調整 */
-  text-align: justify;
-  text-justify: inter-character;
+/* 手機：再縮一點左右內距，給句子更多寬度 */
+@media (max-width:420px){
+  .list .card{ padding:12px 12px; }
 }
