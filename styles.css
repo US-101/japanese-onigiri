@@ -306,3 +306,14 @@ main{ padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 
 /* ====== Appbar/速度區塊微調（避免頂部擠） ====== */
 .appbar .row{ align-items: center; }
 .speed{ white-space: nowrap; }  /* 避免 x0.75 被換行 */
+
+/* 讓日文分行更平均（支援的瀏覽器會更好看） */
+#cards .card .ja{ text-wrap: balance; }
+@supports not (text-wrap: balance){
+  #cards .card .ja{ text-wrap: pretty; }
+}
+
+/* 微增卡片可用寬：讓句子更不容易拆 */
+@media (max-width: 420px){
+  #cards .card{ padding: 12px 12px; }  /* 由 12px 14px 再收一點 */
+}
