@@ -160,3 +160,29 @@ textarea{width:100%;min-height:120px;border:2px solid #cfe7e7;border-radius:14px
 #pickFolder .close:hover, #pickFolderH .close:hover, #confirmDelete .close:hover{
   background:#f3f6f8;
 }
+
+/* === Kana grid spacing tuning (small screens) === */
+@media (max-width: 420px){
+  .appbar .row{ padding: 6px 16px 2px 16px; }     /* 原本 12px/6px */
+  .wrap{ padding: 8px 16px 96px 16px; }           /* 原本 12px top */
+  .grid{ gap: 12px; }                             /* 原本 16px */
+  .tile{ padding: 14px 10px; }                    /* 原本 22px 10px */
+  .big{ margin: 10px 0 16px 0; }                  /* 詳細頁大字區塊稍微收緊 */
+}
+
+/* === Travel cards: prevent buttons covering text === */
+#cards .card{ 
+  display:grid; 
+  grid-template-columns: minmax(0,1fr) auto; 
+  column-gap:12px; 
+  align-items:start;
+}
+#cards .card .text{ min-width:0; }
+#cards .card .ko{ word-break: keep-all; overflow-wrap: anywhere; line-height:1.6; }
+#cards .card .actions{ display:flex; gap:8px; align-self:start; }
+
+/* 小螢幕：按鈕自動掉到下一行，避免遮擋 */
+@media (max-width: 380px){
+  #cards .card{ grid-template-columns: 1fr; }
+  #cards .card .actions{ margin-top:6px; justify-content:flex-start; }
+}

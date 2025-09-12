@@ -6,6 +6,7 @@
 
 <div class="appbar"><div class="row" style="justify-content:space-between;gap:12px;max-width:540px;margin:0 auto;padding:12px 16px 6px 16px">
   <div style="display:flex;gap:12px">
+    <span id="voiceJa" class="pill">蛋捲</span>
     <span id="voiceEn" class="pill">Moira</span>
     <span id="mickey" class="pill"><img src="icons/micky.svg" width="20" height="20" alt=""></span>
   </div>
@@ -88,14 +89,97 @@ function cycleSpeed(){
   updateSpeedUI(); 
 }
 
-function speakJA(t){ 
-  // 修正「行って」的發音問題
-  const correctedText = t.replace(/行って/g, 'いって');
+// === Japanese Voice Whitelist: 只保留 Kyoko (蛋捲) & 模擬太郎 ===
+const JA_LABELS = [
+  { label: '蛋捲', names: ['Kyoko'] },   // 正常女聲
+  { label: '太郎', names: ['Kyoko'] }    // 模擬男聲（通過參數調整）
+];
+
+// 使用者選擇 (UI 顯示用)，預設蛋捲
+let VOICE_JA_LABEL = localStorage.getItem('voiceJaName') || '蛋捲';
+
+// 找出目前系統有哪些可用的日文 voice
+function availableJaVoices() {
+  const all = speechSynthesis.getVoices();
+  const out = [];
+  for (const item of JA_LABELS) {
+    const v = all.find(x =>
+      /ja/i.test(x.lang || '') &&
+      item.names.some(n => (x.name || '').toLowerCase().includes(n.toLowerCase()))
+    );
+    out.push({ label: item.label, voice: v || null });
+  }
+  return out;
+}
+
+// 不改 UI，只回傳實際能用的 voice，否則 fallback
+function resolveJaVoiceSoft() {
+  const all = speechSynthesis.getVoices();
+  // 找目前選的
+  const picked = JA_LABELS.find(x => x.label === VOICE_JA_LABEL);
+  if (picked) {
+    const v = all.find(x =>
+      /ja/i.test(x.lang || '') &&
+      picked.names.some(n => (x.name || '').toLowerCase().includes(n.toLowerCase()))
+    );
+    if (v) return v;
+  }
+  // fallback: 第一個能用的
+  for (const item of JA_LABELS) {
+    const v = all.find(x =>
+      /ja/i.test(x.lang || '') &&
+      item.names.some(n => (x.name || '').toLowerCase().includes(n.toLowerCase()))
+    );
+    if (v) return v;
+  }
+  return null;
+}
+
+// 更新 UI 按鈕文字
+function updateJaVoiceUI() {
+  const el = document.getElementById('voiceJa');
+  if (el) el.textContent = VOICE_JA_LABEL;
+}
+
+// 點擊切換 (兩個之間輪流)
+function cycleJaVoice() {
+  const labels = JA_LABELS.map(x => x.label);
+  const idx = labels.indexOf(VOICE_JA_LABEL);
+  VOICE_JA_LABEL = labels[(idx + 1) % labels.length];
+  localStorage.setItem('voiceJaName', VOICE_JA_LABEL);
+  updateJaVoiceUI();
+}
+
+// 初始化：在 voices ready 時更新 UI
+window.speechSynthesis.onvoiceschanged = () => {
+  resolveJaVoiceSoft();
+  updateJaVoiceUI();
+};
+
+// 注意：不再修改 VOICE_JA_LABEL（不回跳 UI）
+function speakJA(t){
+  const correctedText = (t||'').replace(/行って/g, 'いって');
   const u=new SpeechSynthesisUtterance(correctedText);
   u.lang='ja-JP';
-  u.rate=RATE; 
-  const v=speechSynthesis.getVoices().find(v=>/ja/i.test(v.lang||'')); 
-  if(v) u.voice=v; 
+  
+  const v = resolveJaVoiceSoft();
+  if (v) u.voice = v;
+
+  // 語速基準
+  const baseRate = (typeof RATE === 'number' ? RATE : 0.75);
+
+  if (VOICE_JA_LABEL === '蛋捲') {
+    // 正常女聲
+    u.rate = baseRate;
+    u.pitch = 1.0;
+    u.volume = 1.0;
+  } else if (VOICE_JA_LABEL === '太郎') {
+    // 搞怪男聲（神經質、像米奇）
+    u.rate = Math.min(baseRate * 1.5, 1.6);  // 更快一點
+    u.pitch = 1.8;                           // 更高音
+    u.volume = 1.0;                          // 正常音量
+  }
+
   speechSynthesis.speak(u);
 }
 
@@ -124,40 +208,15 @@ function favs(){
   } 
 }
 
-function formatWord(ja) {
+function formatWord(ja){
+  // 1) 沒有漢字：不標
   const hasKanji = /[\u4E00-\u9FFF]/.test(ja);
   if (!hasKanji) return ja;
 
-  // 檢查是否已經包含 ruby 標籤，避免重複處理
+  // 已經有 ruby 就不重複
   if (ja.includes('<ruby>')) return ja;
 
-  // 形態素解析：處理い形容詞的語幹分離
-  function analyzeMorphology(word, reading) {
-    // い形容詞的語尾模式
-    const iAdjectiveEndings = ['い', 'しい', 'ない', 'たい', 'らしい'];
-    
-    // 檢查是否為い形容詞
-    for (const ending of iAdjectiveEndings) {
-      if (reading.endsWith(ending) && word.endsWith('い')) {
-        const stemReading = reading.slice(0, -ending.length);
-        const stemWord = word.slice(0, -1); // 移除最後的「い」
-        
-        // 如果語幹部分有漢字，返回語幹的平假名
-        if (/[\u4E00-\u9FFF]/.test(stemWord)) {
-          return { 
-            stem: stemWord, 
-            stemReading: stemReading, 
-            okurigana: word.slice(-1), // 語尾部分
-            isIAdjective: true 
-          };
-        }
-      }
-    }
-    
-    return { stem: word, stemReading: reading, okurigana: '', isIAdjective: false };
-  }
-
-  // 智能詞彙映射表 - 按長度排序，整詞優先
+  // 完整的詞彙映射表
   const wordMap = [
     // 完整詞彙（優先匹配）
     { from: "携帯電話番号", to: "けいたいでんわばんごう" },
@@ -206,55 +265,91 @@ function formatWord(ja) {
     { from: "番", to: "ばん" },
     { from: "号", to: "ごう" },
     { from: "入", to: "にゅう" },
-    { from: "力", to: "りょく" }
+    { from: "力", to: "りょく" },
+    { from: "直", to: "ちょく" },
+    { from: "行", to: "い" },
+    { from: "真", to: "ま" },
+    { from: "直ぐ", to: "すぐ" },
+    { from: "勧", to: "すす" },
+    { from: "計", to: "けい" },
+    { from: "別", to: "べつ" },
+    { from: "試", to: "し" },
+    { from: "着", to: "ちゃく" },
+    { from: "幾", to: "いく" },
+    { from: "割", to: "わり" },
+    { from: "引", to: "びき" },
+    { from: "写", to: "しゃ" },
+    { from: "場", to: "ば" },
+    { from: "所", to: "しょ" },
+    { from: "合", to: "あい" },
+    { from: "助", to: "たす" },
+    { from: "難", to: "がた" },
+    { from: "大", to: "だい" },
+    { from: "丈", to: "じょう" },
+    { from: "夫", to: "ぶ" },
+    { from: "人", to: "じん" },
+    { from: "店", to: "みせ" },
+    { from: "屋", to: "や" },
+    { from: "者", to: "しゃ" },
+    { from: "物", to: "もの" },
+    { from: "事", to: "こと" },
+    { from: "時", to: "とき" },
+    { from: "所", to: "ところ" },
+    { from: "方", to: "かた" },
+    { from: "中", to: "なか" },
+    { from: "上", to: "うえ" },
+    { from: "下", to: "した" },
+    { from: "前", to: "まえ" },
+    { from: "後", to: "あと" },
+    { from: "年", to: "ねん" },
+    { from: "月", to: "つき" },
+    { from: "日", to: "ひ" },
+    { from: "今", to: "いま" },
+    { from: "今", to: "こん" },
+    { from: "今", to: "きん" }
   ];
 
-  let result = ja;
-  const processedRanges = []; // 記錄已處理的範圍
-  
-  // 按長度排序，長詞優先
-  wordMap.sort((a, b) => b.from.length - a.from.length);
-  
-  // 智能替換：避免重疊處理
-  for (const { from, to } of wordMap) {
-    let startIndex = 0;
-    while (true) {
-      const index = result.indexOf(from, startIndex);
-      if (index === -1) break;
-      
-      // 檢查是否與已處理範圍重疊
-      const endIndex = index + from.length;
-      const isOverlapping = processedRanges.some(range => 
-        (index < range.end && endIndex > range.start)
-      );
-      
-      if (!isOverlapping) {
-        // 形態素解析：檢查是否為い形容詞
-        const morphology = analyzeMorphology(from, to);
-        
-        let rubyHtml = '';
-        if (morphology.isIAdjective) {
-          // 如果是い形容詞，只對語幹部分添加 ruby，語尾保持原樣
-          rubyHtml = `<ruby><rb>${morphology.stem}</rb><rt>${morphology.stemReading}</rt></ruby>${morphology.okurigana}`;
-        } else {
-          // 一般情況，對整個漢字部分添加 ruby
-          rubyHtml = `<ruby><rb>${from}</rb><rt>${to}</rt></ruby>`;
-        }
-        
-        // 替換並記錄處理範圍
-        result = result.substring(0, index) + rubyHtml + result.substring(endIndex);
-        
-        processedRanges.push({ start: index, end: index + rubyHtml.length });
-        
-        // 調整後續索引
-        startIndex = index + rubyHtml.length;
-      } else {
-        startIndex = endIndex;
+  function buildReadingFromMap(s){
+    // 先整詞找最長匹配
+    const sorted = [...wordMap].sort((a,b)=>b.from.length-a.from.length);
+    const hit = sorted.find(w => w.from === s);
+    if(hit) return hit.to;
+
+    // 只對漢字進行單字處理，假名保持原樣
+    return s.split('').map(ch=>{
+      // 如果是漢字，才查找映射
+      if (/[\u4E00-\u9FFF]/.test(ch)) {
+        const m = wordMap.find(w=>w.from===ch);
+        return m ? m.to : ch;
       }
+      // 假名直接返回
+      return ch;
+    }).join('');
+  }
+
+  // 先嘗試取整詞讀音提示
+  const readingAll = buildReadingFromMap(ja);
+
+  // 2) 動詞/形容詞等「尾碼假名」處理：只給前面的漢字上 ruby
+  const suffix = ja.match(/[ぁ-ゖー]+$/);      // 尾端平假名（送り仮名）
+  if (suffix){
+    const kanaSuffix = suffix[0];
+    if (readingAll && readingAll.endsWith(kanaSuffix)){
+      const baseKanji = ja.slice(0, -kanaSuffix.length);
+      const baseReading = readingAll.slice(0, -kanaSuffix.length);
+      return `<ruby>${baseKanji}<rt>${baseReading}</rt></ruby>${kanaSuffix}`;
     }
   }
-  
-  return result;
+
+  // 3) 其它混合情境（片假名 + 漢字 等）：僅對「連續漢字段」加 ruby
+  return ja.replace(/([\u4E00-\u9FFF]+)/g, seg=>{
+    const yomi = buildReadingFromMap(seg);
+    // 只有當 yomi 不是原字且是平假名時才標註
+    if (yomi && yomi !== seg && /^[\u3041-\u309F]+$/.test(yomi)) {
+      return `<ruby>${seg}<rt>${yomi}</rt></ruby>`;
+    }
+    return seg;
+  });
 }
 
 function isFav(it){ 
@@ -410,4 +505,19 @@ window.speechSynthesis.onvoiceschanged = ()=>{ ensureVoice(); };
 ensureVoice(); 
 updateSpeedUI();
 render();
+
+// 強制初始化日文語音按鈕（延遲執行確保 voices 準備好）
+setTimeout(() => {
+  const voiceJaEl = document.getElementById('voiceJa');
+  if (voiceJaEl && !voiceJaEl.hasAttribute('data-initialized')) {
+    voiceJaEl.addEventListener('click', cycleJaVoice);
+    voiceJaEl.setAttribute('data-initialized', 'true');
+    updateJaVoiceUI();
+    console.log('Japanese voice button force initialized');
+    
+    // 測試可用聲音
+    const avail = availableJaVoices();
+    console.log('Available Japanese voices:', avail);
+  }
+}, 1000);
 </script></body></html>

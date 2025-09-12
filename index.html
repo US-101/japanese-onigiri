@@ -11,6 +11,7 @@
       <button id="btnC" class="pill">片假名</button>
     </div>
     <div style="display:flex;gap:8px">
+      <span id="voiceJa" class="pill">蛋捲</span>
       <span class="pill amber speed">x0.75</span>
     </div>
   </div>
@@ -30,7 +31,10 @@
   <div class="appbar" id="detailAppbar" style="position:fixed;top:0;left:0;right:0;z-index:3000;background:var(--bg);border-bottom:1px solid var(--line)">
     <div class="row" style="justify-content:space-between;gap:12px;max-width:540px;margin:0 auto;padding:12px 16px 6px 16px">
       <button class="pill teal" id="back">← 上一頁</button>
-      <span class="pill amber speed">x0.75</span>
+      <div style="display:flex;gap:8px">
+        <span id="voiceJa" class="pill">蛋捲</span>
+        <span class="pill amber speed">x0.75</span>
+      </div>
     </div>
   </div>
   <div class="sheet" style="padding-top:80px;padding-bottom:110px">
@@ -144,12 +148,126 @@ let RATE=0.75; const SPEEDS=[0.5,0.75,1.0];
 function updateSpeedUI(){ document.querySelectorAll('.speed').forEach(el=>{ el.textContent='x'+RATE.toFixed(2).replace(/\.00$/,''); }); }
 function cycleSpeed(){ const i=SPEEDS.indexOf(RATE); RATE=SPEEDS[(i+1)%SPEEDS.length]; updateSpeedUI(); }
 
+// === Japanese Voice Whitelist: 只保留 Kyoko (蛋捲) & 模擬太郎 ===
+const JA_LABELS = [
+  { label: '蛋捲', names: ['Kyoko'] },   // 正常女聲
+  { label: '太郎', names: ['Kyoko'] }    // 模擬男聲（通過參數調整）
+];
+
+// 使用者選擇 (UI 顯示用)，預設蛋捲
+let VOICE_JA_LABEL = localStorage.getItem('voiceJaName') || '蛋捲';
+
+// 找出目前系統有哪些可用的日文 voice
+function availableJaVoices() {
+  const all = speechSynthesis.getVoices();
+  const out = [];
+  for (const item of JA_LABELS) {
+    const v = all.find(x =>
+      /ja/i.test(x.lang || '') &&
+      item.names.some(n => (x.name || '').toLowerCase().includes(n.toLowerCase()))
+    );
+    out.push({ label: item.label, voice: v || null });
+  }
+  return out;
+}
+
+// 不改 UI，只回傳實際能用的 voice，否則 fallback
+function resolveJaVoiceSoft() {
+  const all = speechSynthesis.getVoices();
+  // 找目前選的
+  const picked = JA_LABELS.find(x => x.label === VOICE_JA_LABEL);
+  if (picked) {
+    const v = all.find(x =>
+      /ja/i.test(x.lang || '') &&
+      picked.names.some(n => (x.name || '').toLowerCase().includes(n.toLowerCase()))
+    );
+    if (v) return v;
+  }
+  // fallback: 第一個能用的
+  for (const item of JA_LABELS) {
+    const v = all.find(x =>
+      /ja/i.test(x.lang || '') &&
+      item.names.some(n => (x.name || '').toLowerCase().includes(n.toLowerCase()))
+    );
+    if (v) return v;
+  }
+  return null;
+}
+
+// 更新 UI 按鈕文字
+function updateJaVoiceUI() {
+  const elements = document.querySelectorAll('#voiceJa');
+  elements.forEach(el => {
+    if (el) el.textContent = VOICE_JA_LABEL;
+  });
+}
+
+// 點擊切換 (兩個之間輪流)
+function cycleJaVoice() {
+  const labels = JA_LABELS.map(x => x.label);
+  const idx = labels.indexOf(VOICE_JA_LABEL);
+  VOICE_JA_LABEL = labels[(idx + 1) % labels.length];
+  localStorage.setItem('voiceJaName', VOICE_JA_LABEL);
+  updateJaVoiceUI();
+}
+
+// 初始化：在 voices ready 時更新 UI
+window.speechSynthesis.onvoiceschanged = () => {
+  resolveJaVoiceSoft();
+  updateJaVoiceUI();
+};
+
+// 注意：不再修改 VOICE_JA_LABEL（不回跳 UI）
 function speakJa(t){ 
   const u=new SpeechSynthesisUtterance(t);
   u.lang='ja-JP';
-  u.rate=RATE;
-  const v = speechSynthesis.getVoices().find(v=>/ja/i.test(v.lang||'')); 
-  if(v) u.voice=v; 
+  
+  const v = resolveJaVoiceSoft();
+  if (v) u.voice = v;
+
+  // 語速基準
+  const baseRate = (typeof RATE === 'number' ? RATE : 0.75);
+
+  if (VOICE_JA_LABEL === '蛋捲') {
+    // 正常女聲
+    u.rate = baseRate;
+    u.pitch = 1.0;
+    u.volume = 1.0;
+  } else if (VOICE_JA_LABEL === '太郎') {
+    // 搞怪男聲（神經質、像米奇）
+    u.rate = Math.min(baseRate * 1.5, 1.6);  // 更快一點
+    u.pitch = 1.8;                           // 更高音
+    u.volume = 1.0;                          // 正常音量
+  }
+
+  speechSynthesis.speak(u);
+}
+
+// 單一假名：只播 1 次，但稍慢（體感更長）
+function speakKanaLong(t){
+  const isSingleKana = /^[\u3041-\u309F\u30A0-\u30FF]$/.test(t||'');
+  if(!isSingleKana){ speakJa(t); return; }
+
+  const u = new SpeechSynthesisUtterance(t);
+  u.lang='ja-JP';
+  const v = resolveJaVoiceSoft();
+  if (v) u.voice = v;
+
+  // 語速基準
+  const base = (typeof RATE === 'number' ? RATE : 0.75);
+
+  if (VOICE_JA_LABEL === '蛋捲') {
+    // 正常女聲，但比一般稍慢
+    u.rate = Math.max(base * 0.8, 0.55);
+    u.pitch = 1.0;
+    u.volume = 1.0;
+  } else if (VOICE_JA_LABEL === '太郎') {
+    // 搞怪男聲（神經質、像米奇）
+    u.rate = Math.min(base * 1.2, 1.3);  // 比蛋捲快，但比一般太郎稍慢
+    u.pitch = 1.8;                        // 高音
+    u.volume = 1.0;                       // 正常音量
+  }
+
   speechSynthesis.speak(u);
 }
 
@@ -169,7 +287,7 @@ function tile(it){
     } else {
       // 這是單擊，設置延遲播放聲音
       clickTimer = setTimeout(() => {
-        speakJa(it.say);
+        speakKanaLong(it.say);
         clickTimer = null;
       }, 200);
     }
@@ -183,338 +301,283 @@ function render(){
   const gc=document.getElementById('gridC'); gc.innerHTML=""; DATA.consonants.forEach(it=>gc.appendChild(tile(it)));
 }
 
-function formatWord(ja, rom) {
-  // 檢查是否包含漢字或數字
+// 詞彙映射表
+const wordMap = [
+  { from: "日本語", to: "にほんご" },
+  { from: "日曜日", to: "にちようび" },
+  { from: "今日は", to: "こんにちは" },
+  { from: "今晩は", to: "こんばんは" },
+  { from: "消しゴム", to: "けしゴム" },
+  { from: "平仮名", to: "ひらがな" },
+  { from: "飛行機", to: "ひこうき" },
+  { from: "縫いぐるみ", to: "ぬいぐるみ" },
+  { from: "難しい", to: "むずかしい" },
+  { from: "珍しい", to: "めずらしい" },
+  { from: "天ぷら", to: "てんぷら" },
+  { from: "気持ち", to: "きもち" },
+  { from: "皆さん", to: "みなさん" },
+  { from: "仲良し", to: "なかよし" },
+  { from: "よろしく", to: "よろしく" },
+  { from: "すみません", to: "すみません" },
+  { from: "日本", to: "にほん" },
+  { from: "今日", to: "きょう" },
+  { from: "先生", to: "せんせい" },
+  { from: "学生", to: "がくせい" },
+  { from: "人形", to: "にんぎょう" },
+  { from: "本当", to: "ほんとう" },
+  { from: "毎朝", to: "まいあさ" },
+  { from: "夕方", to: "ゆうがた" },
+  { from: "郵便", to: "ゆうびん" },
+  { from: "友人", to: "ゆうじん" },
+  { from: "落書き", to: "らくがき" },
+  { from: "楽天", to: "らくてん" },
+  { from: "林檎", to: "りんご" },
+  { from: "旅行", to: "りょこう" },
+  { from: "料理", to: "りょうり" },
+  { from: "類型", to: "るいけい" },
+  { from: "類似", to: "るいじ" },
+  { from: "累積", to: "るいせき" },
+  { from: "練習", to: "れんしゅう" },
+  { from: "歴史", to: "れきし" },
+  { from: "冷蔵庫", to: "れいぞうこ" },
+  { from: "礼儀", to: "れいぎ" },
+  { from: "録音", to: "ろくおん" },
+  { from: "録画", to: "ろくが" },
+  { from: "ろくに", to: "ろくに" },
+  { from: "轆轤", to: "ろくろ" },
+  { from: "若者", to: "わかもの" },
+  { from: "忘れる", to: "わすれる" },
+  { from: "分かる", to: "わかる" },
+  { from: "笑い", to: "わらい" },
+  { from: "若い", to: "わかい" },
+  { from: "洗濯", to: "せんたく" },
+  { from: "生活", to: "せいかつ" },
+  { from: "成功", to: "せいこう" },
+  { from: "週末", to: "しゅうまつ" },
+  { from: "宿題", to: "しゅくだい" },
+  { from: "本", to: "ほん" },
+  { from: "赤", to: "あか" },
+  { from: "雨", to: "あめ" },
+  { from: "足", to: "あし" },
+  { from: "朝", to: "あさ" },
+  { from: "頭", to: "あたま" },
+  { from: "犬", to: "いぬ" },
+  { from: "一", to: "いち" },
+  { from: "家", to: "いえ" },
+  { from: "椅子", to: "いす" },
+  { from: "苺", to: "いちご" },
+  { from: "馬", to: "うま" },
+  { from: "海", to: "うみ" },
+  { from: "歌", to: "うた" },
+  { from: "牛", to: "うし" },
+  { from: "腕", to: "うで" },
+  { from: "鉛筆", to: "えんぴつ" },
+  { from: "駅", to: "えき" },
+  { from: "絵本", to: "えほん" },
+  { from: "英語", to: "えいご" },
+  { from: "笑顔", to: "えがお" },
+  { from: "お金", to: "おかね" },
+  { from: "お茶", to: "おちゃ" },
+  { from: "男", to: "おとこ" },
+  { from: "女", to: "おんな" },
+  { from: "花", to: "はな" },
+  { from: "鞄", to: "かばん" },
+  { from: "紙", to: "かみ" },
+  { from: "風", to: "かぜ" },
+  { from: "川", to: "かわ" },
+  { from: "肩", to: "かた" },
+  { from: "木", to: "き" },
+  { from: "黄色", to: "きいろ" },
+  { from: "狐", to: "きつね" },
+  { from: "金", to: "きん" },
+  { from: "口", to: "くち" },
+  { from: "靴", to: "くつ" },
+  { from: "雲", to: "くも" },
+  { from: "熊", to: "くま" },
+  { from: "黒", to: "くろ" },
+  { from: "剣", to: "けん" },
+  { from: "稽古", to: "けいこ" },
+  { from: "経験", to: "けいけん" },
+  { from: "喧嘩", to: "けんか" },
+  { from: "子供", to: "こども" },
+  { from: "心", to: "こころ" },
+  { from: "魚", to: "さかな" },
+  { from: "桜", to: "さくら" },
+  { from: "砂糖", to: "さとう" },
+  { from: "寒い", to: "さむい" },
+  { from: "作品", to: "さくひん" },
+  { from: "食べる", to: "たべる" },
+  { from: "楽しい", to: "たのしい" },
+  { from: "建物", to: "たてもの" },
+  { from: "宝物", to: "たからもの" },
+  { from: "卵", to: "たまご" },
+  { from: "小さい", to: "ちいさい" },
+  { from: "力", to: "ちから" },
+  { from: "地図", to: "ちず" },
+  { from: "父", to: "ちち" },
+  { from: "中学", to: "ちゅうがく" },
+  { from: "机", to: "つくえ" },
+  { from: "月", to: "つき" },
+  { from: "強い", to: "つよい" },
+  { from: "妻", to: "つま" },
+  { from: "作る", to: "つくる" },
+  { from: "天気", to: "てんき" },
+  { from: "手紙", to: "てがみ" },
+  { from: "店員", to: "てんいん" },
+  { from: "時計", to: "とけい" },
+  { from: "鳥", to: "とり" },
+  { from: "遠い", to: "とおい" },
+  { from: "名前", to: "なまえ" },
+  { from: "夏", to: "なつ" },
+  { from: "何", to: "なに" },
+  { from: "庭", to: "にわ" },
+  { from: "温い", to: "ぬるい" },
+  { from: "盗む", to: "ぬすむ" },
+  { from: "沼", to: "ぬま" },
+  { from: "脱ぐ", to: "ぬぐ" },
+  { from: "猫", to: "ねこ" },
+  { from: "寝る", to: "ねる" },
+  { from: "願い", to: "ねがい" },
+  { from: "年", to: "ねん" },
+  { from: "鼠", to: "ねずみ" },
+  { from: "箸", to: "はし" },
+  { from: "春", to: "はる" },
+  { from: "箱", to: "はこ" },
+  { from: "速い", to: "はやい" },
+  { from: "火", to: "ひ" },
+  { from: "昼", to: "ひる" },
+  { from: "秘密", to: "ひみつ" },
+  { from: "船", to: "ふね" },
+  { from: "服", to: "ふく" },
+  { from: "冬", to: "ふゆ" },
+  { from: "古い", to: "ふるい" },
+  { from: "布団", to: "ふとん" },
+  { from: "部屋", to: "へや" },
+  { from: "下手", to: "へた" },
+  { from: "平和", to: "へいわ" },
+  { from: "変", to: "へん" },
+  { from: "平気", to: "へいき" },
+  { from: "簡単", to: "かんたん" },
+  { from: "漢字", to: "かんじ" },
+  { from: "海苔", to: "のり" },
+  { from: "飲む", to: "のむ" },
+  { from: "脳", to: "のう" },
+  { from: "残る", to: "のこる" },
+  { from: "覗く", to: "のぞく" },
+  { from: "星", to: "ほし" },
+  { from: "本屋", to: "ほんや" },
+  { from: "本質", to: "ほんしつ" },
+  { from: "窓", to: "まど" },
+  { from: "町", to: "まち" },
+  { from: "待つ", to: "まつ" },
+  { from: "漫画", to: "まんが" },
+  { from: "水", to: "みず" },
+  { from: "道", to: "みち" },
+  { from: "緑", to: "みどり" },
+  { from: "見る", to: "みる" },
+  { from: "虫", to: "むし" },
+  { from: "昔", to: "むかし" },
+  { from: "無理", to: "むり" },
+  { from: "娘", to: "むすめ" },
+  { from: "目", to: "め" },
+  { from: "眼鏡", to: "めがね" },
+  { from: "麺", to: "めん" },
+  { from: "名刺", to: "めいし" },
+  { from: "桃", to: "もも" },
+  { from: "森", to: "もり" },
+  { from: "門", to: "もん" },
+  { from: "もっと", to: "もっと" },
+  { from: "文句", to: "もんく" },
+  { from: "山", to: "やま" },
+  { from: "野菜", to: "やさい" },
+  { from: "約束", to: "やくそく" },
+  { from: "焼く", to: "やく" },
+  { from: "役人", to: "やくにん" },
+  { from: "雪", to: "ゆき" },
+  { from: "夢", to: "ゆめ" },
+  { from: "夜", to: "よる" },
+  { from: "読む", to: "よむ" },
+  { from: "予定", to: "よてい" },
+  { from: "喜ぶ", to: "よろこぶ" },
+  { from: "蘭", to: "らん" },
+  { from: "落語", to: "らくご" },
+  { from: "楽", to: "らく" },
+  { from: "寮", to: "りょう" },
+  { from: "理解", to: "りかい" },
+  { from: "留守", to: "るす" },
+  { from: "類", to: "るい" },
+  { from: "零", to: "れい" },
+  { from: "六", to: "ろく" },
+  { from: "を", to: "を" },
+  { from: "世界", to: "せかい" },
+  { from: "空", to: "そら" },
+  { from: "蕎麦", to: "そば" },
+  { from: "祖父", to: "そふ" },
+  { from: "祖母", to: "そぼ" },
+  { from: "掃除", to: "そうじ" },
+  { from: "白", to: "しろ" },
+  { from: "新聞", to: "しんぶん" },
+  { from: "仕事", to: "しごと" },
+  { from: "寿司", to: "すし" },
+  { from: "鈴", to: "すず" },
+  { from: "好き", to: "すき" },
+  { from: "凄い", to: "すごい" },
+  { from: "1", to: "いち" },
+  { from: "2", to: "に" },
+  { from: "3", to: "さん" },
+  { from: "4", to: "よん" },
+  { from: "5", to: "ご" },
+  { from: "6", to: "ろく" },
+  { from: "7", to: "なな" },
+  { from: "8", to: "はち" },
+  { from: "9", to: "きゅう" },
+  { from: "10", to: "じゅう" },
+  { from: "ケーキ屋", to: "ケーキや" },
+  { from: "ノーベル賞", to: "ノーベルしょう" },
+  { from: "ムービー館", to: "ムービーかん" },
+  { from: "ヨーロッパ人", to: "ヨーロッパじん" },
+  { from: "ヨーロッパ旅行", to: "ヨーロッパりょこう" },
+  { from: "思", to: "おも" },
+  { from: "行", to: "い" }
+];
+
+function buildReadingFromMap(s){
+  // 先整詞找最長匹配（沿用你現有的 wordMap）
+  const sorted = [...wordMap].sort((a,b)=>b.from.length-a.from.length);
+  const hit = sorted.find(w => w.from === s);
+  if(hit) return hit.to;
+
+  // 如果找不到完整匹配，返回 null（不標註）
+  return null;
+}
+
+function formatWord(ja){
+  // 1) 沒有漢字：不標
   const hasKanji = /[\u4E00-\u9FFF]/.test(ja);
-  const hasNumbers = /[0-9]/.test(ja);
-  
-  if (!hasKanji && !hasNumbers) return `<div class='ko'>${ja}</div>`;
-  
-  // 只處理漢字和數字，不處理已經是平假名的部分
-  // 將文字分離：漢字+數字 vs 平假名
-  const kanjiNumbers = ja.replace(/[\u3040-\u309F\u30A0-\u30FF]/g, ''); // 移除平假名和片假名
-  if (!kanjiNumbers) return `<div class='ko'>${ja}</div>`; // 如果沒有漢字或數字，直接返回
+  if (!hasKanji) return `<div class='ko'>${ja}</div>`;
 
-  // 形態素解析：處理い形容詞的語幹分離
-  function analyzeMorphology(word, reading) {
-    // い形容詞的語尾模式
-    const iAdjectiveEndings = ['い', 'しい', 'ない', 'たい', 'らしい'];
-    
-    // 檢查是否為い形容詞
-    for (const ending of iAdjectiveEndings) {
-      if (reading.endsWith(ending) && word.endsWith('い')) {
-        const stemReading = reading.slice(0, -ending.length);
-        const stemWord = word.slice(0, -1); // 移除最後的「い」
-        
-        // 如果語幹部分有漢字，返回語幹的平假名
-        if (/[\u4E00-\u9FFF]/.test(stemWord)) {
-          return { 
-            stem: stemWord, 
-            stemReading: stemReading, 
-            okurigana: word.slice(-1), // 語尾部分
-            isIAdjective: true 
-          };
-        }
-      }
-    }
-    
-    return { stem: word, stemReading: reading, okurigana: '', isIAdjective: false };
-  }
+  // 已經有 ruby 就不重複
+  if (ja.includes('<ruby>')) return `<div class='ko'>${ja}</div>`;
 
-  // 定義詞彙映射，按長度排序（長詞在前）
-  const replacements = [
-    { kanji: "日本語", furigana: "にほんご" },
-    { kanji: "日曜日", furigana: "にちようび" },
-    { kanji: "今日は", furigana: "こんにちは" },
-    { kanji: "今晩は", furigana: "こんばんは" },
-    { kanji: "消しゴム", furigana: "けしゴム" },
-    { kanji: "平仮名", furigana: "ひらがな" },
-    { kanji: "飛行機", furigana: "ひこうき" },
-    { kanji: "縫いぐるみ", furigana: "ぬいぐるみ" },
-    { kanji: "難しい", furigana: "むずかしい" },
-    { kanji: "珍しい", furigana: "めずらしい" },
-    { kanji: "天ぷら", furigana: "てんぷら" },
-    { kanji: "気持ち", furigana: "きもち" },
-    { kanji: "皆さん", furigana: "みなさん" },
-    { kanji: "仲良し", furigana: "なかよし" },
-    { kanji: "よろしく", furigana: "よろしく" },
-    { kanji: "すみません", furigana: "すみません" },
-    { kanji: "日本", furigana: "にほん" },
-    { kanji: "今日", furigana: "きょう" },
-    { kanji: "先生", furigana: "せんせい" },
-    { kanji: "学生", furigana: "がくせい" },
-    { kanji: "人形", furigana: "にんぎょう" },
-    { kanji: "本当", furigana: "ほんとう" },
-    { kanji: "毎朝", furigana: "まいあさ" },
-    { kanji: "夕方", furigana: "ゆうがた" },
-    { kanji: "郵便", furigana: "ゆうびん" },
-    { kanji: "友人", furigana: "ゆうじん" },
-    { kanji: "落書き", furigana: "らくがき" },
-    { kanji: "楽天", furigana: "らくてん" },
-    { kanji: "林檎", furigana: "りんご" },
-    { kanji: "旅行", furigana: "りょこう" },
-    { kanji: "料理", furigana: "りょうり" },
-    { kanji: "類型", furigana: "るいけい" },
-    { kanji: "類似", furigana: "るいじ" },
-    { kanji: "累積", furigana: "るいせき" },
-    { kanji: "練習", furigana: "れんしゅう" },
-    { kanji: "歴史", furigana: "れきし" },
-    { kanji: "冷蔵庫", furigana: "れいぞうこ" },
-    { kanji: "礼儀", furigana: "れいぎ" },
-    { kanji: "録音", furigana: "ろくおん" },
-    { kanji: "録画", furigana: "ろくが" },
-    { kanji: "ろくに", furigana: "ろくに" },
-    { kanji: "轆轤", furigana: "ろくろ" },
-    { kanji: "若者", furigana: "わかもの" },
-    { kanji: "忘れる", furigana: "わすれる" },
-    { kanji: "分かる", furigana: "わかる" },
-    { kanji: "笑い", furigana: "わらい" },
-    { kanji: "若い", furigana: "わかい" },
-    { kanji: "洗濯", furigana: "せんたく" },
-    { kanji: "生活", furigana: "せいかつ" },
-    { kanji: "成功", furigana: "せいこう" },
-    { kanji: "週末", furigana: "しゅうまつ" },
-    { kanji: "宿題", furigana: "しゅくだい" },
-    { kanji: "本", furigana: "ほん" },
-    { kanji: "赤", furigana: "あか" },
-    { kanji: "雨", furigana: "あめ" },
-    { kanji: "足", furigana: "あし" },
-    { kanji: "朝", furigana: "あさ" },
-    { kanji: "頭", furigana: "あたま" },
-    { kanji: "犬", furigana: "いぬ" },
-    { kanji: "一", furigana: "いち" },
-    { kanji: "家", furigana: "いえ" },
-    { kanji: "椅子", furigana: "いす" },
-    { kanji: "苺", furigana: "いちご" },
-    { kanji: "馬", furigana: "うま" },
-    { kanji: "海", furigana: "うみ" },
-    { kanji: "歌", furigana: "うた" },
-    { kanji: "牛", furigana: "うし" },
-    { kanji: "腕", furigana: "うで" },
-    { kanji: "鉛筆", furigana: "えんぴつ" },
-    { kanji: "駅", furigana: "えき" },
-    { kanji: "絵本", furigana: "えほん" },
-    { kanji: "英語", furigana: "えいご" },
-    { kanji: "笑顔", furigana: "えがお" },
-    { kanji: "お金", furigana: "おかね" },
-    { kanji: "お茶", furigana: "おちゃ" },
-    { kanji: "男", furigana: "おとこ" },
-    { kanji: "女", furigana: "おんな" },
-    { kanji: "花", furigana: "はな" },
-    { kanji: "鞄", furigana: "かばん" },
-    { kanji: "紙", furigana: "かみ" },
-    { kanji: "風", furigana: "かぜ" },
-    { kanji: "川", furigana: "かわ" },
-    { kanji: "肩", furigana: "かた" },
-    { kanji: "木", furigana: "き" },
-    { kanji: "黄色", furigana: "きいろ" },
-    { kanji: "狐", furigana: "きつね" },
-    { kanji: "金", furigana: "きん" },
-    { kanji: "口", furigana: "くち" },
-    { kanji: "靴", furigana: "くつ" },
-    { kanji: "雲", furigana: "くも" },
-    { kanji: "熊", furigana: "くま" },
-    { kanji: "黒", furigana: "くろ" },
-    { kanji: "剣", furigana: "けん" },
-    { kanji: "稽古", furigana: "けいこ" },
-    { kanji: "経験", furigana: "けいけん" },
-    { kanji: "喧嘩", furigana: "けんか" },
-    { kanji: "子供", furigana: "こども" },
-    { kanji: "心", furigana: "こころ" },
-    { kanji: "魚", furigana: "さかな" },
-    { kanji: "桜", furigana: "さくら" },
-    { kanji: "砂糖", furigana: "さとう" },
-    { kanji: "寒い", furigana: "さむい" },
-    { kanji: "作品", furigana: "さくひん" },
-    { kanji: "食べる", furigana: "たべる" },
-    { kanji: "楽しい", furigana: "たのしい" },
-    { kanji: "建物", furigana: "たてもの" },
-    { kanji: "宝物", furigana: "たからもの" },
-    { kanji: "卵", furigana: "たまご" },
-    { kanji: "小さい", furigana: "ちいさい" },
-    { kanji: "力", furigana: "ちから" },
-    { kanji: "地図", furigana: "ちず" },
-    { kanji: "父", furigana: "ちち" },
-    { kanji: "中学", furigana: "ちゅうがく" },
-    { kanji: "机", furigana: "つくえ" },
-    { kanji: "月", furigana: "つき" },
-    { kanji: "強い", furigana: "つよい" },
-    { kanji: "妻", furigana: "つま" },
-    { kanji: "作る", furigana: "つくる" },
-    { kanji: "天気", furigana: "てんき" },
-    { kanji: "手紙", furigana: "てがみ" },
-    { kanji: "店員", furigana: "てんいん" },
-    { kanji: "時計", furigana: "とけい" },
-    { kanji: "鳥", furigana: "とり" },
-    { kanji: "遠い", furigana: "とおい" },
-    { kanji: "名前", furigana: "なまえ" },
-    { kanji: "夏", furigana: "なつ" },
-    { kanji: "何", furigana: "なに" },
-    { kanji: "庭", furigana: "にわ" },
-    { kanji: "温い", furigana: "ぬるい" },
-    { kanji: "盗む", furigana: "ぬすむ" },
-    { kanji: "沼", furigana: "ぬま" },
-    { kanji: "脱ぐ", furigana: "ぬぐ" },
-    { kanji: "猫", furigana: "ねこ" },
-    { kanji: "寝る", furigana: "ねる" },
-    { kanji: "願い", furigana: "ねがい" },
-    { kanji: "年", furigana: "ねん" },
-    { kanji: "鼠", furigana: "ねずみ" },
-    { kanji: "箸", furigana: "はし" },
-    { kanji: "春", furigana: "はる" },
-    { kanji: "箱", furigana: "はこ" },
-    { kanji: "速い", furigana: "はやい" },
-    { kanji: "火", furigana: "ひ" },
-    { kanji: "昼", furigana: "ひる" },
-    { kanji: "秘密", furigana: "ひみつ" },
-    { kanji: "船", furigana: "ふね" },
-    { kanji: "服", furigana: "ふく" },
-    { kanji: "冬", furigana: "ふゆ" },
-    { kanji: "古い", furigana: "ふるい" },
-    { kanji: "布団", furigana: "ふとん" },
-    { kanji: "部屋", furigana: "へや" },
-    { kanji: "下手", furigana: "へた" },
-    { kanji: "平和", furigana: "へいわ" },
-    { kanji: "変", furigana: "へん" },
-    { kanji: "平気", furigana: "へいき" },
-    { kanji: "簡単", furigana: "かんたん" },
-    { kanji: "漢字", furigana: "かんじ" },
-    { kanji: "海苔", furigana: "のり" },
-    { kanji: "飲む", furigana: "のむ" },
-    { kanji: "脳", furigana: "のう" },
-    { kanji: "残る", furigana: "のこる" },
-    { kanji: "覗く", furigana: "のぞく" },
-    { kanji: "星", furigana: "ほし" },
-    { kanji: "本屋", furigana: "ほんや" },
-    { kanji: "本質", furigana: "ほんしつ" },
-    { kanji: "窓", furigana: "まど" },
-    { kanji: "町", furigana: "まち" },
-    { kanji: "待つ", furigana: "まつ" },
-    { kanji: "漫画", furigana: "まんが" },
-    { kanji: "水", furigana: "みず" },
-    { kanji: "道", furigana: "みち" },
-    { kanji: "緑", furigana: "みどり" },
-    { kanji: "見る", furigana: "みる" },
-    { kanji: "虫", furigana: "むし" },
-    { kanji: "昔", furigana: "むかし" },
-    { kanji: "無理", furigana: "むり" },
-    { kanji: "娘", furigana: "むすめ" },
-    { kanji: "目", furigana: "め" },
-    { kanji: "眼鏡", furigana: "めがね" },
-    { kanji: "麺", furigana: "めん" },
-    { kanji: "名刺", furigana: "めいし" },
-    { kanji: "桃", furigana: "もも" },
-    { kanji: "森", furigana: "もり" },
-    { kanji: "門", furigana: "もん" },
-    { kanji: "もっと", furigana: "もっと" },
-    { kanji: "文句", furigana: "もんく" },
-    { kanji: "山", furigana: "やま" },
-    { kanji: "野菜", furigana: "やさい" },
-    { kanji: "約束", furigana: "やくそく" },
-    { kanji: "焼く", furigana: "やく" },
-    { kanji: "役人", furigana: "やくにん" },
-    { kanji: "雪", furigana: "ゆき" },
-    { kanji: "夢", furigana: "ゆめ" },
-    { kanji: "夜", furigana: "よる" },
-    { kanji: "読む", furigana: "よむ" },
-    { kanji: "予定", furigana: "よてい" },
-    { kanji: "喜ぶ", furigana: "よろこぶ" },
-    { kanji: "蘭", furigana: "らん" },
-    { kanji: "落語", furigana: "らくご" },
-    { kanji: "楽", furigana: "らく" },
-    { kanji: "寮", furigana: "りょう" },
-    { kanji: "理解", furigana: "りかい" },
-    { kanji: "留守", furigana: "るす" },
-    { kanji: "類", furigana: "るい" },
-    { kanji: "零", furigana: "れい" },
-    { kanji: "六", furigana: "ろく" },
-    { kanji: "を", furigana: "を" },
-    { kanji: "世界", furigana: "せかい" },
-    { kanji: "空", furigana: "そら" },
-    { kanji: "蕎麦", furigana: "そば" },
-    { kanji: "祖父", furigana: "そふ" },
-    { kanji: "祖母", furigana: "そぼ" },
-    { kanji: "掃除", furigana: "そうじ" },
-    { kanji: "白", furigana: "しろ" },
-    { kanji: "新聞", furigana: "しんぶん" },
-    { kanji: "仕事", furigana: "しごと" },
-    { kanji: "寿司", furigana: "すし" },
-    { kanji: "鈴", furigana: "すず" },
-    { kanji: "好き", furigana: "すき" },
-    { kanji: "凄い", furigana: "すごい" },
-    { kanji: "1", furigana: "いち" },
-    { kanji: "2", furigana: "に" },
-    { kanji: "3", furigana: "さん" },
-    { kanji: "4", furigana: "よん" },
-    { kanji: "5", furigana: "ご" },
-    { kanji: "6", furigana: "ろく" },
-    { kanji: "7", furigana: "なな" },
-    { kanji: "8", furigana: "はち" },
-    { kanji: "9", furigana: "きゅう" },
-    { kanji: "10", furigana: "じゅう" },
-    { kanji: "ケーキ屋", furigana: "ケーキや" },
-    { kanji: "ノーベル賞", furigana: "ノーベルしょう" },
-    { kanji: "ムービー館", furigana: "ムービーかん" },
-    { kanji: "ヨーロッパ人", furigana: "ヨーロッパじん" },
-    { kanji: "ヨーロッパ旅行", furigana: "ヨーロッパりょこう" },
-    { kanji: "思", furigana: "おも" },
-    { kanji: "行", furigana: "い" }
-  ];
+  // 先嘗試取整詞讀音提示
+  const readingAll = buildReadingFromMap(ja);
 
-  let result = ja;
-  const processedRanges = []; // 記錄已處理的範圍
-  
-  // 按長度排序，長詞優先
-  replacements.sort((a, b) => b.kanji.length - a.kanji.length);
-  
-  // 智能替換：只處理漢字和數字部分
-  for (const { kanji, furigana } of replacements) {
-    let startIndex = 0;
-    while (true) {
-      const index = result.indexOf(kanji, startIndex);
-      if (index === -1) break;
-      
-      // 檢查這個位置是否在平假名/片假名區域內
-      const charBefore = index > 0 ? result[index - 1] : '';
-      const charAfter = index + kanji.length < result.length ? result[index + kanji.length] : '';
-      
-      // 如果前後字符是平假名/片假名，跳過這個位置
-      if (/[\u3040-\u309F\u30A0-\u30FF]/.test(charBefore) || /[\u3040-\u309F\u30A0-\u30FF]/.test(charAfter)) {
-        startIndex = index + kanji.length;
-        continue;
-      }
-      
-      // 檢查是否與已處理範圍重疊
-      const endIndex = index + kanji.length;
-      const isOverlapping = processedRanges.some(range => 
-        (index < range.end && endIndex > range.start)
-      );
-      
-      if (!isOverlapping) {
-        // 形態素解析：檢查是否為い形容詞
-        const morphology = analyzeMorphology(kanji, furigana);
-        
-        let rubyHtml = '';
-        if (morphology.isIAdjective) {
-          // 如果是い形容詞，只對語幹部分添加 ruby，語尾保持原樣
-          rubyHtml = `<ruby><rb>${morphology.stem}</rb><rt>${morphology.stemReading}</rt></ruby>${morphology.okurigana}`;
-        } else {
-          // 一般情況，對整個漢字部分添加 ruby
-          rubyHtml = `<ruby><rb>${kanji}</rb><rt>${furigana}</rt></ruby>`;
-        }
-        
-        // 替換並記錄處理範圍
-        result = result.substring(0, index) + rubyHtml + result.substring(endIndex);
-        
-        processedRanges.push({ start: index, end: index + rubyHtml.length });
-        
-        // 調整後續索引
-        startIndex = index + rubyHtml.length;
-      } else {
-        startIndex = endIndex;
-      }
+  // 2) 動詞/形容詞等「尾碼假名」處理：只給前面的漢字上 ruby
+  const suffix = ja.match(/[ぁ-ゖー]+$/);      // 尾端平假名（送り仮名）
+  if (suffix){
+    const kanaSuffix = suffix[0];
+    if (readingAll && readingAll.endsWith(kanaSuffix)){
+      const baseKanji = ja.slice(0, -kanaSuffix.length);
+      const baseReading = readingAll.slice(0, -kanaSuffix.length);
+      return `<div class='ko'><ruby>${baseKanji}<rt>${baseReading}</rt></ruby>${kanaSuffix}</div>`;
     }
   }
+
+  // 3) 其它混合情境（片假名 + 漢字 等）：僅對「連續漢字段」加 ruby
+  const result = ja.replace(/([\u4E00-\u9FFF]+)/g, seg=>{
+    const yomi = buildReadingFromMap(seg);
+    return yomi ? `<ruby>${seg}<rt>${yomi}</rt></ruby>` : seg;
+  });
   
   return `<div class='ko'>${result}</div>`;
 }
@@ -524,7 +587,7 @@ function openDetail(item){
   
   // 為大字母卡片添加點擊事件
   const bigLetter = document.getElementById('bigLetter');
-  bigLetter.onclick = () => speakJa(item.say);
+  bigLetter.onclick = () => speakKanaLong(item.say);
   
   const w=document.getElementById('words'); 
   w.innerHTML=''; 
@@ -565,4 +628,22 @@ btnC.addEventListener('click',()=>{btnC.classList.add('teal');btnV.classList.rem
 
 updateSpeedUI();
 render();
+
+// 強制初始化日文語音按鈕（延遲執行確保 voices 準備好）
+setTimeout(() => {
+  // 初始化所有 voiceJa 按鈕（主頁面和詳細頁面）
+  const voiceJaElements = document.querySelectorAll('#voiceJa');
+  voiceJaElements.forEach(voiceJaEl => {
+    if (voiceJaEl && !voiceJaEl.hasAttribute('data-initialized')) {
+      voiceJaEl.addEventListener('click', cycleJaVoice);
+      voiceJaEl.setAttribute('data-initialized', 'true');
+      updateJaVoiceUI();
+      console.log('Japanese voice button force initialized');
+    }
+  });
+  
+  // 測試可用聲音
+  const avail = availableJaVoices();
+  console.log('Available Japanese voices:', avail);
+}, 1000);
 </script></body></html>
