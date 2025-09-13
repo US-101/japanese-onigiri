@@ -52,6 +52,20 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-rounded,ui-sa
 .word .ko{font-weight:800;font-size:22px;color:#8ECFD0;position:relative;padding-top:12px}
 .word .ko ruby{font-size:22px;color:#8ECFD0}
 .word .ko rt{font-size:12px;color:#8ECFD0;font-weight:400;user-select:none}
+
+/* 卡片中的日文讀音標記 */
+.card .ko ruby, .card-inner .ko ruby{
+  font-size:inherit;
+  color:inherit;
+  font-weight:inherit;
+}
+.card .ko rt, .card-inner .ko rt{
+  font-size:10px;
+  color:#8b8f94;
+  font-weight:400;
+  user-select:none;
+  line-height:1;
+}
 .word .zh{font-size:14px;color:var(--ink);margin-bottom:4px}
 .word .desc{font-size:12px;color:var(--muted);letter-spacing:2px}
 .btn{display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border-radius:12px;background:#fff;border:1px solid var(--line);cursor:pointer}
@@ -78,18 +92,6 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-rounded,ui-sa
 
 /* 列表卡 */
 .list{display:flex;flex-direction:column;gap:14px;margin-top:14px}
-.card{background:#fff;border-radius:18px;box-shadow:var(--shadow);padding:14px 16px;position:relative}
-.card .ko{font-weight:800;word-wrap:break-word;overflow-wrap:break-word;max-width:calc(100% - 120px);line-height:1.4;position:relative;padding-top:12px}
-.card .ko ruby{font-size:16px}
-.card .ko rt{font-size:10px;color:#2b2f33;font-weight:400;user-select:none}
-.card .en{font-size:13px;color:#5a6166;margin-top:6px}
-.card .zh{font-size:12px;color:#97a1a6}
-.badges{position:absolute;top:14px;right:16px;display:flex;gap:6px;align-items:center}
-.badge{background:#f0fbfb;border:1px solid #d6efef;color:#6aa;padding:6px 8px;border-radius:999px;font-size:12px}
-.star{cursor:pointer;font-size:18px;color:#c3ccd0}
-.star.on{color:#f5c14a}
-.star img{width:18px;height:18px;display:block;opacity:.9;filter:grayscale(100%) brightness(0) invert(70%)}
-.star.on img{opacity:1;filter:none}
 
 /* 輸入框 */
 textarea{width:100%;min-height:120px;border:2px solid #cfe7e7;border-radius:14px;padding:12px;font-size:15px;background:#fff}
@@ -170,42 +172,15 @@ textarea{width:100%;min-height:120px;border:2px solid #cfe7e7;border-radius:14px
   .big{ margin: 10px 0 16px 0; }                  /* 詳細頁大字區塊稍微收緊 */
 }
 
-/* === Travel cards: prevent buttons covering text === */
-#cards .card{ 
-  display:grid; 
-  grid-template-columns: minmax(0,1fr) auto; 
-  column-gap:12px; 
-  align-items:start;
-}
-#cards .card .text{ min-width:0; }
-
-/* === CJK / EN 不同換行策略 === */
-/* 旅行會話卡片內的日文（避免醜斷行） */
-#cards .card .ko{
-  word-break: keep-all;        /* 不在任意字元拆開（適合日文/中文） */
-  overflow-wrap: normal;       /* 取消 anywhere，避免奇怪的位置換行 */
-  line-break: strict;          /* CJK 嚴格換行規則 */
-  -webkit-line-break: strict;  /* Safari 補強 */
-  text-wrap: pretty;           /* 新版瀏覽器：更漂亮的標點/禁則處理 */
-  hanging-punctuation: allow-end;
-  letter-spacing: 0.01em;
-  line-height: 1.7;
-}
-
-/* 如瀏覽器支援 balance，標題式句子更平均（不會單獨掉字） */
-@supports (text-wrap: balance){
-  #cards .card .ko{ text-wrap: balance; }
-}
-
 /* 英文可在必要時斷字，不影響日文 */
-#cards .card .en{
+.card .en{
   overflow-wrap: anywhere;
   hyphens: auto;
   line-height: 1.5;
 }
 
 /* 中文可與日文相同策略（可選） */
-#cards .card .zh{
+.card .zh{
   word-break: keep-all;
   overflow-wrap: normal;
   line-break: strict;
@@ -214,388 +189,168 @@ textarea{width:100%;min-height:120px;border:2px solid #cfe7e7;border-radius:14px
   line-height: 1.6;
 }
 
-#cards .card .actions{ display:flex; gap:8px; align-self:start; }
 
-/* 小螢幕：按鈕自動掉到下一行，避免遮擋 */
-@media (max-width: 380px){
-  #cards .card{ grid-template-columns: 1fr; }
-  #cards .card .actions{ margin-top:6px; justify-content:flex-start; }
+/* --- 卡片版面（保持你現有 grid） --- */
+.card{border-radius:18px;box-shadow:var(--shadow);background:#fff;overflow:hidden}
+.card-inner{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"ja btn" "tr btn";align-items:start;column-gap:12px}
+
+/* 左欄：日文 + 翻譯（內距一致、層次平衡） */
+.card-inner .ko{grid-area:ja;padding:16px 16px 6px 16px;font-weight:800;line-height:1.4;white-space:normal;overflow-wrap:normal;word-break:normal}
+.card-inner .trans{grid-area:tr;padding:0 16px 14px 16px}
+.card-inner .trans .en{font-size:13px;color:#5a6166;margin-top:6px}
+.card-inner .trans .zh{font-size:12px;color:#8b8f94;margin-top:4px}
+
+/* 右欄：小圓鈕（還是用 .pill，但外觀改回「圓＋底色」） */
+.card-inner .act{
+  grid-area:btn;
+  padding:12px 12px 0 0;             /* 與卡片右上角距離 */
+  display:flex; gap:10px; justify-content:flex-end; align-items:flex-start;
 }
 
-/* 手機寬度微調：給句子多一點寬度 */
-@media (max-width: 400px){
-  #cards .card{ padding: 12px 14px; } /* 原本 14px 16px */
+
+/* 調整卡片內距，讓三行文字的上/下邊距更均衡 */
+#cards .card{ padding:16px 16px; }         /* 原本是 14px 16px */
+#cards .card .ko{ margin-bottom:4px; }     /* JA 與 EN 之間微距 */
+#cards .card .en{ margin-top:6px; }
+#cards .card .zh{ 
+  margin-top:4px;
+  word-break: break-all;        /* 強制中文可以斷行 */
+  overflow-wrap: break-word;    /* 確保長文字會換行 */
+  line-height: 1.4;             /* 適當的行高 */
 }
 
-/* ====== CJK/EN line wrapping (travel cards) ====== */
-#cards .card .ja{
-  word-break: keep-all;
-  overflow-wrap: normal;
-  line-break: strict;
-  -webkit-line-break: strict;
-  text-wrap: balance;
-  line-height: 1.7;
-  letter-spacing: .01em;
+/* ---- 卡片：版面與內距（沿用你現有的） ---- */
+.card{
+  border-radius:18px;
+  box-shadow:var(--shadow);
+  background:#fff;
+  overflow:hidden;
 }
-@supports not (text-wrap: balance){
-  #cards .card .ja{ text-wrap: pretty; }
-}
-#cards .card .zh{
-  word-break: keep-all;
-  overflow-wrap: normal;
-  line-break: strict;
-  -webkit-line-break: strict;
-  text-wrap: pretty;
-  line-height: 1.6;
-}
-#cards .card .en{
-  overflow-wrap: anywhere;
-  hyphens: auto;
-  line-height: 1.5;
-}
-
-/* ====== Buttons never cover text (travel cards) ====== */
-#cards .card{
-  display: grid;
-  grid-template-columns: minmax(0,1fr) auto;
-  align-items: start;
-  column-gap: 12px;
-}
-#cards .card .text{ min-width: 0; }        /* 讓文字區能收縮 */
-#cards .card .actions{
-  display: flex;
-  gap: 8px;
-  align-self: start;
-  position: static !important;             /* 強制不是絕對定位 */
-}
-@media (max-width: 380px){
-  #cards .card{ grid-template-columns: 1fr; }
-  #cards .card .actions{ margin-top: 6px; }
-}
-
-/* 小螢幕卡片左右留白微縮，讓句子更寬 */
-@media (max-width: 420px){
-  #cards .card{ padding: 12px 14px; }
-}
-
-/* ====== Bottom tab bar fixed & safe area ====== */
-:root{ --tabbar-h: 68px; }
-
-.tabbar{
-  position: fixed;
-  left: 0; right: 0; bottom: 0;
-  height: var(--tabbar-h);
-  z-index: 1000;
-  backdrop-filter: saturate(180%) blur(8px);
-}
-.tabbar .in{ height: 100%; }
-
-/* 主要內容底部留出空間（含安全區） */
-.wrap{
-  padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 16px);
-}
-
-/* 有些頁面主體不是 .wrap 的，保底處理 */
-main{ padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 16px); }
-
-/* iOS 安全區底邊距補強（如果有需要） */
-@supports(padding: max(0px)){
-  .tabbar{ padding-bottom: max(env(safe-area-inset-bottom), 0px); }
-}
-
-/* ====== Appbar/速度區塊微調（避免頂部擠） ====== */
-.appbar .row{ align-items: center; }
-.speed{ white-space: nowrap; }  /* 避免 x0.75 被換行 */
-
-/* === 列表型卡片（旅行會話＋歷史紀錄）統一修正 === */
-
-/* 版面：左文字、右按鈕；窄螢幕按鈕自動換行，不遮字 */
-.list .card{
+.card-inner{
   display:grid;
-  grid-template-columns:minmax(0,1fr) auto;
+  grid-template-columns:minmax(0,1fr) auto;  /* 左：文字；右：按鈕 */
+  grid-template-areas:
+    "ja btn"
+    "tr btn";
   align-items:start;
   column-gap:12px;
 }
-.list .card .text{ min-width:0; }
-.list .card .actions,
-.list .card .badges{
-  position:static !important;   /* 取消絕對定位，避免壓到文字 */
-  display:flex;
-  gap:8px;
-  align-self:start;
+.card-inner .ko{ grid-area:ja; padding:16px 16px 6px 16px; font-weight:800; line-height:1.4; white-space:normal; overflow-wrap:normal; word-break:normal; }
+.card-inner .trans{ grid-area:tr; padding:0 16px 14px 16px; }
+.card-inner .trans .en{ font-size:13px; color:#5a6166; margin-top:6px; }
+.card-inner .trans .zh{ 
+  font-size:12px; 
+  color:#8b8f94; 
+  margin-top:4px;
+  word-break: break-all;        /* 強制中文可以斷行 */
+  overflow-wrap: break-word;    /* 確保長文字會換行 */
+  line-height: 1.4;             /* 適當的行高 */
 }
-@media (max-width:380px){
-  .list .card{ grid-template-columns:1fr; }
-  .list .card .actions,
-  .list .card .badges{ margin-top:6px; }
-}
-
-/* 日文區塊（你的 DOM 用 .ko）：漂亮換行＋避免孤字行 */
-.list .card .ko{
-  /* 先解除舊的強迫斷字與寬度限制 */
-  max-width:none !important;
-  word-wrap:normal !important;
-  overflow-wrap:normal !important;
-
-  /* CJK 友善換行 */
-  word-break:keep-all;
-  line-break:strict;
-  -webkit-line-break:strict;
-  text-wrap:balance;            /* 新瀏覽器平均分行 */
-  letter-spacing:.01em;
-  line-height:1.75;
-
-  /* 避免最後只剩 1 個字（瀏覽器盡力而為） */
-  min-inline-size:6em;
-  widows:2;
-  orphans:2;
-
-  /* 空間不足時用字距補齊，避免孤字行 */
-  text-align:justify;
-  text-justify:inter-character;
-}
-
-/* 英文／中文在兩頁面也一致處理 */
-.list .card .en{
-  overflow-wrap:anywhere;
-  hyphens:auto;
-  line-height:1.5;
-}
-.list .card .zh{
-  word-break:keep-all;
-  overflow-wrap:normal;
-  line-break:strict;
-  -webkit-line-break:strict;
-  text-wrap:pretty;
-  line-height:1.6;
-}
-
-/* 手機：再縮一點左右內距，給句子更多寬度 */
-@media (max-width:420px){
-  .list .card{ padding:12px 12px; }
-}
-
-/* === 修正：關掉日文強制對齊，避免大空白 === */
-#cards .card .ko,
-.list .card .ko{
-  text-align: start !important;      /* 關掉 justify */
-  text-justify: auto !important;
-  letter-spacing: .01em;
-  line-height: 1.75;
-  text-wrap: balance;                 /* 仍保留平均分行 */
-  word-break: keep-all;
-  line-break: strict;
-  -webkit-line-break: strict;
-
-  /* 避免孤字行：保守一點，不要硬撐過頭 */
-  min-inline-size: 5em;               /* 原先 6em → 稍微放鬆 */
-  widows: 2;
-  orphans: 2;
-}
-
-/* 若瀏覽器不支援 balance，退成 pretty */
-@supports not (text-wrap: balance){
-  #cards .card .ko,
-  .list .card .ko{ text-wrap: pretty; }
-}
-
-/* 仍保證按鈕不會蓋字（保險再覆蓋一次） */
-#cards .card .badges,
-#cards .card .actions,
-.list .card .badges,
-.list .card .actions{
-  position: static !important;
-  display: flex;
-  gap: 8px;
-  align-self: start;
-}
-
-@media (max-width: 380px){
-  #cards .card, .list .card{ grid-template-columns: 1fr; }
-  #cards .card .badges, #cards .card .actions,
-  .list .card .badges, .list .card .actions{ margin-top: 6px; }
-}
-
-/* === Travel cards + 歷史紀錄：日文句子強制單行 === */
-#cards .card .ko,
-.list .card .ko {
-  white-space: nowrap;     /* 強制整句單行 */
-  overflow-x: auto;        /* 放不下時橫向捲動，而不是亂拆字 */
-  word-break: keep-all;
-  line-break: strict;
-  -webkit-line-break: strict;
-  letter-spacing: 0.01em;
-  line-height: 1.75;
-}
-
-
-
-/* === Unified conversation cards (travel / translate / history) === */
-
-/* 版面：左文字，右按鈕；窄螢幕按鈕掉下去 */
-.list .card,
-#cards .card {
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto !important;
-  align-items: start !important;
-  column-gap: 12px !important;
-}
-
-.list .card .text,
-#cards .card .text {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 4px !important;
-  min-width: 0 !important;
-}
-
-/* 右側按鈕／徽章：固定靠右，非絕對定位 */
-.list .card .actions,
-.list .card .badges,
-#cards .card .actions,
-#cards .card .badges {
-  position: static !important;
-  display: flex !important;
-  gap: 8px !important;
-  align-self: start !important;
-}
-
-@media (max-width: 380px) {
-  .list .card,
-  #cards .card {
-    grid-template-columns: 1fr !important;
-  }
-  .list .card .actions,
-  .list .card .badges,
-  #cards .card .actions,
-  #cards .card .badges {
-    margin-top: 6px !important;
-    justify-content: flex-start !important;
-  }
-}
-
-/* 日文：一行顯示，超出橫向捲動，不亂拆字 */
-.list .card .ko,
-#cards .card .ko {
-  display: block !important;
-  white-space: nowrap !important;
-  overflow-x: auto !important;
-  word-break: keep-all !important;
-  overflow-wrap: normal !important;
-  line-break: strict !important;
-  -webkit-line-break: strict !important;
-  letter-spacing: .01em !important;
-  line-height: 1.7 !important;
-  max-width: none !important;
-}
-
-/* 英文：允許自動換行 */
-.list .card .en,
-#cards .card .en {
-  display: block !important;
-  text-align: left !important;
-  white-space: normal !important;
-  overflow: visible !important;
-  overflow-wrap: anywhere !important;
-  hyphens: auto !important;
-  line-height: 1.5 !important;
-}
-
-/* 中文：正常換行 */
-.list .card .zh,
-#cards .card .zh {
-  display: block !important;
-  text-align: left !important;
-  white-space: normal !important;
-  overflow: visible !important;
-  word-break: keep-all !important;
-  line-break: strict !important;
-  -webkit-line-break: strict !important;
-  text-wrap: pretty !important;
-  line-height: 1.6 !important;
-}
-
-/* Furigana (假名) 縮小，不撐開行高 */
-ruby { ruby-position: over; }
-rt { font-size: .6em; line-height: 1; letter-spacing: 0; user-select: none; }
-
-/* 小螢幕：卡片左右留白縮小 */
-@media (max-width: 420px) {
-  .list .card,
-  #cards .card { padding: 12px 12px !/* === Make translate & history cards look like travel cards === */
-
-/* 版面：左=文字(直排) 右=按鈕；窄螢幕按鈕掉下方 */
-.list .card,
-#cards .card{
+.card-inner .act{
+  grid-area:btn;
+  padding:12px 12px 0 0;
   display:grid;
-  grid-template-columns:minmax(0,1fr) auto;
-  align-items:start;
-  column-gap:12px;
-}
-
-/* 左側文字容器：日/英/中垂直排列 */
-.list .card .text,
-#cards .card .text{
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-  min-width:0;
-}
-
-/* 右側按鈕（含 .badges/.actions），統一非絕對定位 */
-.list .card .actions, .list .card .badges,
-#cards .card .actions, #cards .card .badges{
-  position:static !important;
-  display:flex;
+  grid-template-columns:1fr 1fr;    /* 兩欄：日文、英文按鈕 */
+  grid-template-rows:auto auto;     /* 兩列：按鈕列、飯糰列 */
+  grid-template-areas:
+    "ja en"
+    ".  star";                      /* 飯糰在英文按鈕下方 */
   gap:8px;
-  align-self:start;
+  justify-items:end;                /* 靠右對齊 */
+  align-items:start;
 }
 
-@media (max-width:380px){
-  .list .card, #cards .card{ grid-template-columns:1fr; }
-  .list .card .actions, .list .card .badges,
-  #cards .card .actions, #cards .card .badges{ margin-top:6px; }
+/* ---- 卡片右上角小鈕：圓形按鈕 ---- */
+/* 使用 act 容器；若某頁仍用 actions，下面再做相容處理 */
+.card-inner .act .pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:34px;               /* 縮小的圓形寬度 */
+  height:34px;              /* 縮小的圓形高度 */
+  min-width:34px;           /* 固定寬度，不被文字撐大 */
+  padding:0;                /* 圓形按鈕不需要內距 */
+  border-radius:50%;        /* 真正的圓形 */
+  border:1.5px solid var(--teal);
+  background:#F3FCFD;       /* 淡藍綠底色 */
+  color:var(--teal);
+  font-size:13px;           /* 配合縮小調整字體 */
+  font-weight:600;
+  line-height:1;
+  box-shadow:var(--shadow);
+  cursor:pointer;
 }
 
-/* —— 文案樣式：跟旅行會話一致 —— */
-/* 日文：正常換行（不亂拆），行高和假名一致 */
-.list .card .ko,
-#cards .card .ko{
+/* 按鈕在 grid 中的位置 */
+.card-inner .act .pill[data-ja] { grid-area: ja; }    /* 日文按鈕 */
+.card-inner .act .pill[data-en] { grid-area: en; }    /* 英文按鈕 */
+.card-inner .act .star { grid-area: star; }           /* 飯糰在英文按鈕下方 */
+
+/* ---- 相容：若某頁仍用 .actions 容器，套同樣樣式 ---- */
+#cards .card .actions .pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:34px;               /* 縮小的圓形寬度 */
+  height:34px;              /* 縮小的圓形高度 */
+  min-width:34px;           /* 固定寬度，不被文字撐大 */
+  padding:0;                /* 圓形按鈕不需要內距 */
+  border-radius:50%;        /* 真正的圓形 */
+  border:1.5px solid var(--teal);
+  background:#F3FCFD;       /* 淡藍綠底色 */
+  color:var(--teal);
+  font-size:13px;           /* 配合縮小調整字體 */
+  font-weight:600;
+  line-height:1;
+  box-shadow:var(--shadow);
+  cursor:pointer;
+}
+
+/* 文字區塊的上下距（讓三行視覺更平衡） */
+#cards .card{ padding:16px 16px; }
+#cards .card .ko{ margin-bottom:4px; }
+#cards .card .en{ margin-top:6px; }
+#cards .card .zh{ 
+  margin-top:4px;
+  word-break: break-all;        /* 強制中文可以斷行 */
+  overflow-wrap: break-word;    /* 確保長文字會換行 */
+  line-height: 1.4;             /* 適當的行高 */
+}
+
+/* 飯糰收藏圖標 - 與圓形按鈕同樣大小 */
+.star{
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:34px;               /* 與圓形按鈕同樣大小 */
+  height:34px;
+  min-width:34px;
+  border-radius:50%;        /* 圓形背景 */
+  background:#F3FCFD;       /* 與圓形按鈕同樣背景色 */
+  border:1.5px solid #e9eef2;  /* 淡灰色邊框 */
+  box-shadow:var(--shadow);
+  transition:all 0.2s ease;
+}
+.star.on{
+  border-color:var(--amber);  /* 收藏時用琥珀色邊框 */
+  background:#fffbe6;         /* 收藏時用淡黃色背景 */
+}
+.star img{
+  width:18px;               /* 圖標稍微小一點，留白邊 */
+  height:18px;
   display:block;
-  white-space:normal;
-  word-break:keep-all;
-  overflow-wrap:normal;
-  line-break:strict;
-  -webkit-line-break:strict;
-  letter-spacing:.01em;
-  line-height:1.7;
+  opacity:.8;
+  transition:all 0.2s ease;
 }
-
-/* 英文：可在需要時斷字 */
-.list .card .en, #cards .card .en{
-  display:block;
-  overflow-wrap:anywhere;
-  hyphens:auto;
-  line-height:1.5;
+.star.on img{
+  opacity:1;
 }
-
-/* 中文：正常換行 */
-.list .card .zh, #cards .card .zh{
-  display:block;
-  word-break:keep-all;
-  line-break:strict;
-  -webkit-line-break:strict;
-  text-wrap:pretty;
-  line-height:1.6;
+.star:hover{
+  transform:translateY(-1px);
+  box-shadow:0 8px 20px rgba(40,48,54,.12);
 }
-
-/* Furigana 不撐開行高（與旅行頁一致） */
-ruby{ ruby-position:over; }
-rt{ font-size:.6em; line-height:1; letter-spacing:0; user-select:none; }
-
-/* 卡片左右留白微縮（小螢幕看起來更像旅行頁） */
-@media (max-width:420px){
-  .list .card, #cards .card{ padding:12px 12px; }
+.star:hover img{
+  opacity:1;
+  transform:scale(1.1);
 }
-
-

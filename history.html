@@ -225,6 +225,10 @@ function formatWord(ja){
     { from: "真っ直ぐ", to: "まっすぐ" },
     { from: "大丈夫", to: "だいじょうぶ" },
     { from: "有難う", to: "ありがとう" },
+    { from: "有難うございます", to: "ありがとうございます" },
+    { from: "有難", to: "ありが" },
+    { from: "辛くない", to: "からくない" },
+    { from: "物", to: "もの" },
     { from: "助けて", to: "たすけて" },
     { from: "お勧め", to: "おすすめ" },
     { from: "会計", to: "かいけい" },
@@ -266,7 +270,7 @@ function formatWord(ja){
     { from: "号", to: "ごう" },
     { from: "入", to: "にゅう" },
     { from: "力", to: "りょく" },
-    { from: "直", to: "ちょく" },
+    { from: "直", to: "す" },
     { from: "行", to: "い" },
     { from: "真", to: "ま" },
     { from: "直ぐ", to: "すぐ" },
@@ -371,15 +375,19 @@ function render(){
     const c=document.createElement('div'); 
     c.className='card'; 
     c.innerHTML=`
-      <div class='ko' data-original='${it.ja}'>${formatWord(it.ja)}</div>
-      <div class='en'>${it.en}</div>
-      <div class='zh'>${it.zh}</div>
-      <div class='badges'>
-        <span class='badge' data-ja='${it.ja}'>日</span>
-        <span class='badge' data-en='${it.en}'>英</span>
-        <span class='star ${starred?'on':''}' data-star='1'>
-          <img src='icons/${starred?'onigiri-yellow':'onigiri'}.svg' alt='${starred?'已收藏':'收藏'}' />
-        </span>
+      <div class='card-inner'>
+        <div class='ko' data-original='${it.ja}'>${formatWord(it.ja)}</div>
+        <div class='trans'>
+          <div class='en'>${it.en}</div>
+          <div class='zh'>${it.zh}</div>
+        </div>
+        <div class='act'>
+          <button class='pill' data-ja='${it.ja}'>日</button>
+          <button class='pill' data-en='${it.en}'>英</button>
+          <span class='star ${starred?'on':''}' data-star='1'>
+            <img src='icons/${starred?'onigiri-yellow':'onigiri'}.svg' alt='${starred?'已收藏':'收藏'}' />
+          </span>
+        </div>
       </div>
     `; 
     box.appendChild(c); 

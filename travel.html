@@ -41,7 +41,7 @@ document.getElementById('mickey').addEventListener('click',e=>e.currentTarget.cl
 
 const DATA={R:[
   ["お勧めは何ですか？","What do you recommend?","有什麼推薦的嗎？"],
-  ["辛くない物にしてください。","Please make it less spicy.","可以做不那麼辣嗎？"],
+  ["辛くない物にしてください。","Please make it less spicy.","可以做不辣的嗎？"],
   ["お会計は別々にしてください。","Could we split the bill?","請分開結帳。"],
   ["カードで払えますか？","Can I pay with card?","可以刷卡嗎？"]
 ],S:[
@@ -170,7 +170,11 @@ function formatWord(ja){
     { from: "真っ直ぐ", to: "まっすぐ" },
     { from: "大丈夫", to: "だいじょうぶ" },
     { from: "有難う", to: "ありがとう" },
+    { from: "有難うございます", to: "ありがとうございます" },
+    { from: "有難", to: "ありが" },
     { from: "助けて", to: "たすけて" },
+    { from: "辛くない", to: "からくない" },
+    { from: "物", to: "もの" },
     { from: "お勧め", to: "おすすめ" },
     { from: "会計", to: "かいけい" },
     { from: "別々", to: "べつべつ" },
@@ -209,7 +213,7 @@ function formatWord(ja){
     { from: "号", to: "ごう" },
     { from: "入", to: "にゅう" },
     { from: "力", to: "りょく" },
-    { from: "直", to: "ちょく" },
+    { from: "直", to: "す" },
     { from: "行", to: "い" },
     { from: "真", to: "ま" },
     { from: "直ぐ", to: "すぐ" },
@@ -295,8 +299,8 @@ function formatWord(ja){
   });
 } 
 
-function cardBase([ja,en,zh]){ const d=document.createElement('div'); d.className='card'; d.innerHTML=`<div class='text'><div class='ko' data-original='${ja}'>${formatWord(ja)}</div><div class='en'>${en}</div><div class='zh'>${zh}</div></div><div class='actions'><span class='badge' data-ja='${ja}'>日</span><span class='badge' data-en='${en}'>英</span></div>`; return d; }
-function cardFav(f){ const d=document.createElement('div'); d.className='card'; d.innerHTML=`<div class='text'><div class='ko' data-original='${f.ja}'>${formatWord(f.ja)}</div><div class='en'>${f.en}</div><div class='zh'>${f.zh}</div></div><div class='actions'><span class='badge' data-ja='${f.ja}'>日</span><span class='badge' data-en='${f.en}'>英</span><span class='star on' data-fav='1' title='已收藏'><img src='icons/onigiri-yellow.svg' alt='已收藏' /></span></div>`; return d; }
+function cardBase([ja,en,zh]){ const d=document.createElement('div'); d.className='card'; d.innerHTML=`<div class='card-inner'><div class='ko' data-original='${ja}'>${formatWord(ja)}</div><div class='trans'><div class='en'>${en}</div><div class='zh'>${zh}</div></div><div class='act'><button class='pill' data-ja='${ja}'>日</button><button class='pill' data-en='${en}'>英</button></div></div>`; return d; }
+function cardFav(f){ const d=document.createElement('div'); d.className='card'; d.innerHTML=`<div class='card-inner'><div class='ko' data-original='${f.ja}'>${formatWord(f.ja)}</div><div class='trans'><div class='en'>${f.en}</div><div class='zh'>${f.zh}</div></div><div class='act'><button class='pill' data-ja='${f.ja}'>日</button><button class='pill' data-en='${f.en}'>英</button><span class='star on' data-fav='1' title='已收藏'><img src='icons/onigiri-yellow.svg' alt='已收藏' /></span></div></div>`; return d; }
 function favs(){ try{ return JSON.parse(localStorage.getItem('japanese-favorites')||'[]'); }catch(e){ return []; } }
 function render(cat){ const box=document.getElementById('cards'); box.innerHTML=''; (DATA[cat]||[]).forEach(x=>box.appendChild(cardBase(x)));
   // append favorites that belong to this folder name
