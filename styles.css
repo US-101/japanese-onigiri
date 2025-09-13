@@ -333,7 +333,7 @@ textarea{width:100%;min-height:120px;border:2px solid #cfe7e7;border-radius:14px
   transition:all 0.2s ease;
 }
 .star.on{
-  border-color:var(--amber);  /* 收藏時用琥珀色邊框 */
+  border-color:#FAD162;       /* 收藏時用 #FAD162 邊框 */
   background:#fffbe6;         /* 收藏時用淡黃色背景 */
 }
 .star img{
@@ -342,9 +342,11 @@ textarea{width:100%;min-height:120px;border:2px solid #cfe7e7;border-radius:14px
   display:block;
   opacity:.8;
   transition:all 0.2s ease;
+  filter:invert(79%) sepia(14%) saturate(1036%) hue-rotate(130deg) brightness(92%) contrast(88%);  /* #8ECFD0 顏色 */
 }
 .star.on img{
   opacity:1;
+  filter:none;  /* 已收藏時移除濾鏡，顯示原始黃色 */
 }
 .star:hover{
   transform:translateY(-1px);
