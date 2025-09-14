@@ -5,11 +5,15 @@
 <header class="topbar"><div class="bar"><h1 class="title"><img src="icons/p2.svg" alt=""></h1></div></header>
 <div class="appbar"><div class="row" style="justify-content:space-between;gap:12px;max-width:540px;margin:0 auto;padding:12px 16px 6px 16px">
   <div style="display:flex;gap:12px">
-    <span id="voiceJa" class="pill">蛋捲</span>
     <span id="voiceEn" class="pill">Moira</span>
-    <span id="mickey" class="pill"><img src="icons/micky.svg" width="20" height="20" alt=""></span>
   </div>
-  <span class="pill amber speed">x0.75</span>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span id="mickey" class="pill"><img src="icons/micky.svg" width="20" height="20" alt=""></span>
+    <span class="pill amber speed">x0.75</span>
+  </div>
+</div>
+<div class="row" style="justify-content:flex-start;max-width:540px;margin:0 auto;padding:0 16px 8px 16px">
+  <div style="font-size:12px;color:#97a1a6">英語：點選名字可切換人物 · 英語：名前クリックで話者切替<br>按下<img src="icons/micky.svg" width="16" height="16" alt="米奇" style="vertical-align:middle;margin:0 2px;filter:grayscale(100%) brightness(0) invert(70%);">切換成米奇模式 · <img src="icons/micky.svg" width="16" height="16" alt="ミッキー" style="vertical-align:middle;margin:0 2px;filter:grayscale(100%) brightness(0) invert(70%);">押下でミッキーモード切替</div>
 </div>
 <div class="tabs"><button class="tab active" data-tab="R">餐廳</button><button class="tab" data-tab="S">購物</button><button class="tab" data-tab="N">問路</button><button class="tab" data-tab="O">其他</button></div></div>
 <main class="wrap"><div id="cards" class="list"></div></main>
@@ -26,7 +30,9 @@
 </div></section>
 <script>
 const EN=["Daniel","Moira","Samantha","Tessa"];
-let RATE=0.75; const SPEEDS=[0.5,0.75,1.0];
+// 從 localStorage 讀取設定，如果沒有則使用預設值
+let RATE = parseFloat(localStorage.getItem('speechRate')) || 0.75;
+const SPEEDS=[0.5,0.75,1.0];
 let VOICE_EN_NAME = localStorage.getItem('voiceEnName') || 'Moira';
 function updateVoiceUI(){ const el=document.getElementById('voiceEn'); if(el) el.textContent = VOICE_EN_NAME; }
 function availableEnVoices(){ const all=speechSynthesis.getVoices(); return EN.map(n=>all.find(v=>v.name===n)).filter(Boolean); }
@@ -34,10 +40,14 @@ function ensureVoice(){ const avail=availableEnVoices().map(v=>v.name); if(!avai
   updateVoiceUI(); }
 function cycleVoice(){ const avail=availableEnVoices().map(v=>v.name); if(!avail.length) return; const idx=avail.indexOf(VOICE_EN_NAME); VOICE_EN_NAME = avail[(idx+1)%avail.length]; localStorage.setItem('voiceEnName', VOICE_EN_NAME); updateVoiceUI(); }
 function updateSpeedUI(){ document.querySelectorAll('.speed').forEach(el=>{ el.textContent='x'+RATE.toFixed(2).replace(/\.00$/,''); }); }
-function cycleSpeed(){ const i=SPEEDS.indexOf(RATE); RATE=SPEEDS[(i+1)%SPEEDS.length]; updateSpeedUI(); }
+function cycleSpeed(){ 
+  const i=SPEEDS.indexOf(RATE); 
+  RATE=SPEEDS[(i+1)%SPEEDS.length]; 
+  localStorage.setItem('speechRate', RATE.toString());
+  updateSpeedUI(); 
+}
 function loadEn(){ const all=speechSynthesis.getVoices(); const sel=document.getElementById('voiceEn'); const picked=EN.map(n=>all.find(v=>v.name===n)).filter(Boolean); if(picked.length){ sel.innerHTML=picked.map(v=>`<option>${v.name}</option>`).join(""); const saved=localStorage.getItem('voiceEnName'); if(saved&&picked.some(v=>v.name===saved)) sel.value=saved; sel.addEventListener('change',()=>localStorage.setItem('voiceEnName', sel.value)); } }
 window.speechSynthesis.onvoiceschanged = ()=>{ ensureVoice(); };
-document.getElementById('mickey').addEventListener('click',e=>e.currentTarget.classList.toggle('on'));
 
 const DATA={R:[
   ["お勧めは何ですか？","What do you recommend?","有什麼推薦的嗎？"],
@@ -59,95 +69,38 @@ const DATA={R:[
   ["すみません。","Excuse me.","不好意思。"],["助けてください。","Please help me.","請幫幫我。"]
 ]};
 
-// === Japanese Voice Whitelist: 只保留 Kyoko (蛋捲) & 模擬太郎 ===
-const JA_LABELS = [
-  { label: '蛋捲', names: ['Kyoko'] },   // 正常女聲
-  { label: '太郎', names: ['Kyoko'] }    // 模擬男聲（通過參數調整）
-];
-
-// 使用者選擇 (UI 顯示用)，預設蛋捲
-let VOICE_JA_LABEL = localStorage.getItem('voiceJaName') || '蛋捲';
-
-// 找出目前系統有哪些可用的日文 voice
-function availableJaVoices() {
+// === Japanese Voice: 使用 Kyoko，通過米奇模式切換聲音效果 ===
+function resolveJaVoice() {
   const all = speechSynthesis.getVoices();
-  const out = [];
-  for (const item of JA_LABELS) {
-    const v = all.find(x =>
-      /ja/i.test(x.lang || '') &&
-      item.names.some(n => (x.name || '').toLowerCase().includes(n.toLowerCase()))
-    );
-    out.push({ label: item.label, voice: v || null });
-  }
-  return out;
+  return all.find(x => /ja/i.test(x.lang || '') && (x.name || '').toLowerCase().includes('kyoko')) || 
+         all.find(x => /ja/i.test(x.lang || '')) || null;
 }
 
-// 不改 UI，只回傳實際能用的 voice，否則 fallback
-function resolveJaVoiceSoft() {
-  const all = speechSynthesis.getVoices();
-  // 找目前選的
-  const picked = JA_LABELS.find(x => x.label === VOICE_JA_LABEL);
-  if (picked) {
-    const v = all.find(x =>
-      /ja/i.test(x.lang || '') &&
-      picked.names.some(n => (x.name || '').toLowerCase().includes(n.toLowerCase()))
-    );
-    if (v) return v;
-  }
-  // fallback: 第一個能用的
-  for (const item of JA_LABELS) {
-    const v = all.find(x =>
-      /ja/i.test(x.lang || '') &&
-      item.names.some(n => (x.name || '').toLowerCase().includes(n.toLowerCase()))
-    );
-    if (v) return v;
-  }
-  return null;
-}
-
-// 更新 UI 按鈕文字
-function updateJaVoiceUI() {
-  const el = document.getElementById('voiceJa');
-  if (el) el.textContent = VOICE_JA_LABEL;
-}
-
-// 點擊切換 (兩個之間輪流)
-function cycleJaVoice() {
-  const labels = JA_LABELS.map(x => x.label);
-  const idx = labels.indexOf(VOICE_JA_LABEL);
-  VOICE_JA_LABEL = labels[(idx + 1) % labels.length];
-  localStorage.setItem('voiceJaName', VOICE_JA_LABEL);
-  updateJaVoiceUI();
-}
-
-// 初始化：在 voices ready 時更新 UI
-window.speechSynthesis.onvoiceschanged = () => {
-  resolveJaVoiceSoft();
-  updateJaVoiceUI();
-};
-
-// 注意：不再修改 VOICE_JA_LABEL（不回跳 UI）
+// 日文語音播放函數，支持米奇模式
 function speakJA(t){ 
   const correctedText = (t||'').replace(/行って/g, 'いって');
   const u=new SpeechSynthesisUtterance(correctedText);
   u.lang='ja-JP';
   
-  const v = resolveJaVoiceSoft();
+  const v = resolveJaVoice();
   if (v) u.voice = v;
 
   // 語速基準
   const baseRate = (typeof RATE === 'number' ? RATE : 0.75);
+  
+  // 檢查是否啟用米奇模式
+  const mickeyMode = document.getElementById('mickey').classList.contains('on');
 
-  if (VOICE_JA_LABEL === '蛋捲') {
-    // 正常女聲
-    u.rate = baseRate;
-    u.pitch = 1.0;
-    u.volume = 1.0;
-  } else if (VOICE_JA_LABEL === '太郎') {
-    // 搞怪男聲（神經質、像米奇）
+  if (mickeyMode) {
+    // 米奇模式：搞怪男聲（神經質、像米奇）
     u.rate = Math.min(baseRate * 1.5, 1.6);  // 更快一點
     u.pitch = 1.8;                           // 更高音
     u.volume = 1.0;                          // 正常音量
+  } else {
+    // 正常模式：蛋捲女聲
+    u.rate = baseRate;
+    u.pitch = 1.0;
+    u.volume = 1.0;
   }
 
   speechSynthesis.speak(u);
@@ -383,26 +336,18 @@ document.addEventListener('click',e=>{
   }
 });
 ensureVoice(); updateSpeedUI();
-updateSpeedUI();
 render("R");
 
-// 強制初始化日文語音按鈕（延遲執行確保 voices 準備好）
-setTimeout(() => {
-  const voiceJaEl = document.getElementById('voiceJa');
-  if (voiceJaEl && !voiceJaEl.hasAttribute('data-initialized')) {
-    voiceJaEl.addEventListener('click', cycleJaVoice);
-    voiceJaEl.setAttribute('data-initialized', 'true');
-    updateJaVoiceUI();
-    console.log('Japanese voice button force initialized');
-    
-    // 測試可用聲音
-    const avail = availableJaVoices();
-    console.log('Available Japanese voices:', avail);
-    
-    // 顯示所有系統日文聲音供調試
-    const allVoices = speechSynthesis.getVoices();
-    const allJaVoices = allVoices.filter(v => /ja/i.test(v.lang || ''));
-    console.log('All system Japanese voices:', allJaVoices.map(v => ({name: v.name, lang: v.lang})));
-  }
-}, 1000);
+// 初始化米奇按鈕並從 localStorage 恢復狀態
+const mickeyButton = document.getElementById('mickey');
+const mickeyState = localStorage.getItem('mickeyMode') === 'true';
+if (mickeyState) {
+  mickeyButton.classList.add('on');
+}
+
+mickeyButton.addEventListener('click', e => {
+  e.currentTarget.classList.toggle('on');
+  const isOn = e.currentTarget.classList.contains('on');
+  localStorage.setItem('mickeyMode', isOn.toString());
+});
 </script></body></html>

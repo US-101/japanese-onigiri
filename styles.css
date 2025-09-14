@@ -108,9 +108,9 @@ textarea{width:100%;min-height:120px;border:2px solid #cfe7e7;border-radius:14px
 .tabbar a.active .ico img{opacity:1;filter:invert(79%) sepia(14%) saturate(1036%) hue-rotate(130deg) brightness(92%) contrast(88%)}
 
 /* Mickey 開關樣式：無邊框、預設灰、啟用為 #8ECFD0 */
-#mickey{border:none;background:transparent;box-shadow:none;cursor:pointer;padding:8px 10px}
-#mickey img{display:block;width:32px;height:32px;opacity:.9;filter:grayscale(100%) brightness(0) invert(70%)}
-#mickey.on img{opacity:1;filter:invert(79%) sepia(14%) saturate(1036%) hue-rotate(130deg) brightness(92%) contrast(88%)}
+#mickey, #mickeyModal{border:none;background:transparent;box-shadow:none;cursor:pointer;padding:8px 10px}
+#mickey img, #mickeyModal img{display:block;width:32px;height:32px;opacity:.9;filter:grayscale(100%) brightness(0) invert(70%)}
+#mickey.on img, #mickeyModal.on img{opacity:1;filter:invert(79%) sepia(14%) saturate(1036%) hue-rotate(130deg) brightness(92%) contrast(88%)}
 
 /* 詳細頁播放按鈕：icon 顏色為 #8ECFD0，按下短暫變 #FAD162 */
 .modal .btn{border:1px solid transparent;background:transparent;color:#8ECFD0}
