@@ -107,6 +107,24 @@ function speakEN(t){ const v=speechSynthesis.getVoices().find(v=>v.name===VOICE_
 async function tMM(q,from,to){ const r=await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(q)}&langpair=${from}|${to}`); const j=await r.json(); return j?.responseData?.translatedText || ""; }
 async function tLibre(q,from,to){ const r=await fetch("https://libretranslate.de/translate", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({q,source:from,target:to})}); const j=await r.json(); return j?.translatedText || ""; }
 
+// 清理日文翻譯結果，移除不必要的助詞
+function cleanJapanese(text) {
+  if (!text) return text;
+  
+  // 移除句子開頭或結尾的「を」
+  text = text.replace(/^を+/g, '').replace(/を+$/g, '');
+  
+  // 移除多餘的助詞組合（例如：AをBする -> AB する）
+  text = text.replace(/([^\s]+)を([^\s]+する)/g, '$1$2');
+  
+  // 移除獨立的「を」（前後有空格或標點）
+  text = text.replace(/\s+を\s+/g, ' ');
+  text = text.replace(/^を\s+/g, '');
+  text = text.replace(/\s+を$/g, '');
+  
+  return text.trim();
+}
+
 async function doTranslate(text){ 
   let ja="",en="",zh=""; 
   
@@ -127,6 +145,8 @@ async function doTranslate(text){
     try{ja=await tMM(text,"zh-TW","ja");}catch(e){}
     if(!en){try{en=await tLibre(text,"zh","en");}catch(e){}}
     if(!ja){try{ja=await tLibre(text,"zh","ja");}catch(e){}}
+    // 清理日文翻譯結果
+    ja = cleanJapanese(ja);
     return {ja,en,zh:text};
   } else {
     // 英文或其他語言輸入：翻譯成中文和日文
@@ -134,6 +154,8 @@ async function doTranslate(text){
     try{ja=await tMM(text,"en","ja");}catch(e){}
     if(!zh){try{zh=await tLibre(text,"en","zh");}catch(e){}}
     if(!ja){try{ja=await tLibre(text,"en","ja");}catch(e){}}
+    // 清理日文翻譯結果
+    ja = cleanJapanese(ja);
     return {ja,en:text,zh};
   }
 }
@@ -187,6 +209,8 @@ function formatWord(ja){
     { from: "追加", to: "ついか" },
     { from: "場合", to: "ばあい" },
     { from: "行って", to: "いって" },
+    { from: "文章", to: "ぶんしょう" },
+    { from: "翻訳", to: "ほんやく" },
     
     // 部分詞彙（次優先）
     { from: "携帯", to: "けいたい" },
@@ -255,7 +279,11 @@ function formatWord(ja){
     { from: "日", to: "ひ" },
     { from: "今", to: "いま" },
     { from: "今", to: "こん" },
-    { from: "今", to: "きん" }
+    { from: "今", to: "きん" },
+    { from: "文", to: "ぶん" },
+    { from: "章", to: "しょう" },
+    { from: "翻", to: "ほん" },
+    { from: "訳", to: "やく" }
   ];
 
   function buildReadingFromMap(s){
