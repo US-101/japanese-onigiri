@@ -302,7 +302,9 @@ document.addEventListener('click',e=>{
     const starEl = e.target.closest('.star') || e.target;
     const c=starEl.closest('.card'); 
     const folder=document.querySelector('.tab.active').textContent; 
-    const ja=c.querySelector('.ko').textContent; 
+    // 使用 data-original 屬性獲取原始日文，避免 ruby 標註影響比對
+    const koEl = c.querySelector('.ko');
+    const ja = koEl.hasAttribute('data-original') ? koEl.getAttribute('data-original') : koEl.textContent;
     const en=c.querySelector('.en').textContent; 
     const zh=c.querySelector('.zh').textContent; 
     if(starEl.hasAttribute('data-fav')){ 
