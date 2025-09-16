@@ -48,7 +48,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-rounded,ui-sa
 .big span{font-size:56px;color:#78bfc0;font-weight:800}
 
 /* 單字卡片 */
-.word{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:12px 16px;margin-top:14px;display:flex;align-items:center;gap:16px}
+.word{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:8px 16px;margin-top:14px;display:flex;align-items:center;gap:16px}
 .word .ko{font-weight:800;font-size:22px;color:#8ECFD0;position:relative;padding-top:6px}
 .word .ko ruby{font-size:22px;color:#8ECFD0}
 .word .ko rt{font-size:12px;color:#8ECFD0;font-weight:400;user-select:none}
