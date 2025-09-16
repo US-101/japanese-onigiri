@@ -2,19 +2,19 @@
 body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-rounded,ui-sans-serif,-apple-system,'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;padding-top:72px}
 
 /* 頂列（固定在最上、層級最高） */
-.topbar{position:fixed;top:0;left:0;right:0;z-index:2000;background:var(--bg)}
-.topbar .bar{background:var(--bg);padding:14px 16px;border-bottom:1px solid var(--line)}
+.topbar{position:fixed;top:0;left:0;right:0;z-index:2000;background:#F3FCFD!important}
+.topbar .bar{background:#F3FCFD!important;padding:14px 16px;border-bottom:1px solid var(--line)}
 .topbar .title{text-align:center;margin:0;letter-spacing:0;color:#78bfc0;font-weight:700;display:flex;align-items:center;justify-content:center;min-height:44px}
 .topbar .title img{width:44px;height:44px;display:block;filter:invert(79%) sepia(14%) saturate(1036%) hue-rotate(130deg) brightness(92%) contrast(88%)}
 
 /* 次頂列（貼齊 topbar 下緣 72px，不再頂到最上面） */
-.appbar{position:sticky;top:72px;z-index:95;background:var(--bg)}
-.appbar .bar{background:var(--bg);padding:14px 16px;border-bottom:1px solid var(--line)}
+.appbar{position:sticky;top:72px;z-index:95;background:#F3FCFD!important}
+.appbar .bar{background:#F3FCFD!important;padding:14px 16px;border-bottom:1px solid var(--line)}
 .appbar .title{text-align:center;margin:0;letter-spacing:0;color:#78bfc0;font-weight:700;display:flex;align-items:center;justify-content:center;min-height:32px}
 .appbar .row{display:flex;align-items:center;gap:10px;justify-content:center;padding:12px 16px 6px 16px}
 
 /* 可能存在的次級固定列（維持原本貼齊 topbar） */
-.subbar{position:fixed;left:0;right:0;top:72px;background:var(--bg);z-index:85;border-bottom:1px solid var(--line)}
+.subbar{position:fixed;left:0;right:0;top:72px;background:#F3FCFD!important;z-index:85;border-bottom:1px solid var(--line)}
 .has-subbar .wrap{padding-top:116px}
 
 /* 膠囊按鈕（全域預設） */
@@ -49,7 +49,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-rounded,ui-sa
 
 /* 單字卡片 */
 .word{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:12px 16px;margin-top:14px;display:flex;align-items:center;gap:16px}
-.word .ko{font-weight:800;font-size:22px;color:#8ECFD0;position:relative;padding-top:12px}
+.word .ko{font-weight:800;font-size:22px;color:#8ECFD0;position:relative;padding-top:6px}
 .word .ko ruby{font-size:22px;color:#8ECFD0}
 .word .ko rt{font-size:12px;color:#8ECFD0;font-weight:400;user-select:none}
 
@@ -330,3 +330,26 @@ textarea{width:100%;min-height:120px;border:2px solid #cfe7e7;border-radius:14px
   transform:scale(1.1);
   transition:transform 0.2s ease;  /* 只對 hover 的縮放做動畫 */
 }
+
+/* 空狀態樣式 */
+.empty-state{
+  background:#fff;
+  border-radius:20px;
+  padding:32px 24px;
+  text-align:center;
+  box-shadow:var(--shadow);
+  margin:20px 0;
+}
+.empty-text{
+  font-size:18px;
+  font-weight:600;
+  color:var(--ink);
+  margin-bottom:8px;
+}
+.empty-subtext{
+  font-size:14px;
+  color:var(--muted);
+  line-height:1.5;
+}
+
+

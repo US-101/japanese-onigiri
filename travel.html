@@ -112,6 +112,7 @@ function formatWord(ja){
   const hasKanji = /[\u4E00-\u9FFF]/.test(ja);
   if (!hasKanji) return ja;
 
+
   // 已經有 ruby 就不重複
   if (ja.includes('<ruby>')) return ja;
 
@@ -281,7 +282,7 @@ document.addEventListener('copy', e => {
 
 document.addEventListener('click',e=>{ 
   if(e.target.closest('#voiceEn')) return cycleVoice(); 
-  if(e.target.closest('.speed')) return cycleSpeed(); 
+  if(e.target.closest('.speed')) return cycleSpeed();
   if(e.target.matches('[data-ja]')){ 
     e.target.classList.add('pulse','amber-temp'); 
     setTimeout(()=>e.target.classList.remove('pulse','amber-temp'),350); 

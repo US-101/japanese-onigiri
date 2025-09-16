@@ -164,8 +164,8 @@ function formatWord(ja){
   const hasKanji = /[\u4E00-\u9FFF]/.test(ja);
   if (!hasKanji) return ja;
 
-  // 已經有 ruby 就不重複
-  if (ja.includes('<ruby>')) return ja;
+  // 歷史紀錄頁面：翻譯的文字不顯示讀音標記
+  return ja;
 
   // 完整的詞彙映射表
   const wordMap = [
@@ -317,7 +317,7 @@ function render(){
   const H=hist(); 
   
   if(!H.length){ 
-    box.innerHTML="<div class='card' style='padding:32px 24px;text-align:left;line-height:1.6;'>尚無歷史紀錄，請到「實時翻譯」頁面開始翻譯。</div>"; 
+    box.innerHTML="<div class='empty-state'><div class='empty-text'>尚無歷史紀錄</div><div class='empty-subtext'>請到「實時翻譯」頁面開始翻譯</div></div>"; 
     return; 
   } 
   
